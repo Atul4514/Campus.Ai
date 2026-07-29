@@ -1,0 +1,86 @@
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+/static
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+
+# OS
+Thumbs.db
+.DS_Store
+*.bak
+
+# Vector store & embeddings (large files)
+/vectorstore/
+*.faiss
+*.pkl
+
+# Test coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Celery
+celerybeat-schedule
+dump.rdb
+
+# Node modules (if you add frontend later)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Production files (don't commit these)
+/uploads/
+/temp/
+*.sqlite
+
+# Sensitive files
+*.pem
+*.key
+*.crt
+secrets.json
+credentials.json
