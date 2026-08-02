@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Role & Access Management{% endblock %}
+{% block wrapper_class %}{% endblock %}
+{% block content %}
+<div class="dash-wrapper">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="text-white mb-0">Role & Access Management</h3>
+            <span class="badge-role text-white">ADMIN CONTROL</span>
+        </div>
+        <a href="{% url 'dashboard_page' %}" class="btn btn-outline-light rounded-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="glass-card p-4">
+        <h5 class="mb-3" style="color: var(--text-main);"><i class="bi bi-shield-lock me-2"></i>Manage User Roles</h5>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Full Name</th>
+                        <th>College ID</th>
+                        <th>Current Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.full_name|default:'-' }}</td>
+                        <td>{{ user.college_id }}</td>
+                        <td><span class="badge-role text-white">{{ user.role|upper }}</span></td>
+                        <td>
+                            <form method="post" class="d-flex gap-2 align-items-center">
+                                {% csrf_token %}
+                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                <select name="role" class="form-select form-select-sm" style="max-width: 140px;">
+                                    <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
+                                    <option value="faculty" {% if user.role == 'faculty' %}selected{% endif %}>Faculty</option>
+                                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary-custom">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No users found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

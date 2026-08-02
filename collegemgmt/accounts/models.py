@@ -8,6 +8,7 @@ class User(AbstractUser):
         ('admin', 'Admin'),
     ]
 
+    full_name = models.CharField(max_length=150, blank=True)   # ← add this line
     college_id = models.CharField(max_length=20, unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
     department = models.CharField(max_length=100, blank=True)
@@ -17,7 +18,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.college_id})"
-
 
 class CollegeIDAllowlist(models.Model):
     college_id = models.CharField(max_length=20, unique=True)

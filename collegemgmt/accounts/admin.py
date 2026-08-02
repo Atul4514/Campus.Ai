@@ -3,9 +3,9 @@ from .models import User, CollegeIDAllowlist
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'college_id', 'role', 'email', 'is_verified')
+    list_display = ('username', 'full_name', 'college_id', 'role', 'email', 'is_verified')
     list_filter = ('role', 'is_verified')
-    search_fields = ('username', 'college_id', 'email')
+    search_fields = ('username', 'full_name', 'college_id', 'email')
 
 @admin.register(CollegeIDAllowlist)
 class CollegeIDAllowlistAdmin(admin.ModelAdmin):

@@ -7,7 +7,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'college_id', 'role', 'department', 'phone', 'is_verified']
+        fields = ['id', 'username', 'full_name', 'email', 'college_id', 'role', 'department', 'phone', 'is_verified']
         read_only_fields = ['id', 'is_verified']
 
 
@@ -17,7 +17,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'college_id', 'password', 'department', 'phone']
+        fields = ['full_name', 'username', 'email', 'college_id', 'password', 'department', 'phone']
 
     def validate_college_id(self, value):
         try:

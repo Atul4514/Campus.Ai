@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="auth-card mx-auto">
+    <div class="auth-card-header">
+        <i class="bi bi-shield-lock-fill"></i>
+        <h3 class="mb-1">Welcome </h3>
+        <p class="mb-0 opacity-75">Login to your account</p>
+    </div>
+    <div class="auth-card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-floating mb-3">
+                {{ form.username }}
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {% if form.username.errors %}<div class="field-error">{{ form.username.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="form-floating mb-3 password-field-wrap">
+                {{ form.password }}
+                <button type="button" class="password-toggle-btn" data-target="{{ form.password.id_for_label }}" aria-label="Show password">
+                    <i class="bi bi-eye-fill"></i>
+                </button>
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                {% if form.password.errors %}<div class="field-error">{{ form.password.errors|striptags }}</div>{% endif %}
+            </div>
+            {% if form.non_field_errors %}
+                <div class="field-error mb-2">{{ form.non_field_errors|striptags }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary-custom w-100 text-white mt-2">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+            </button>
+        </form>
+        <p class="text-center mt-4 mb-0 auth-link">
+            Don't have an account? <a href="{% url 'register_page' %}">Register here</a>
+        </p>
+    </div>
+    <div class="text-end mb-3">
+    <a href="{% url 'password_reset' %}" class="small text-decoration-none" style="color:#4f46e5;">Forgot Password?</a>
+</div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.password-toggle-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            if (!input) return;
+            const icon = this.querySelector('i');
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.className = isPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill';
+            this.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        });
+    });
+});
+</script>
+{% endblock %}
