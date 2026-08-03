@@ -11,5 +11,6 @@ urlpatterns = [
     path('api/role-access/', include('role_access.urls')),
     path('api/student-management/', include('student_management.urls')),
 ]
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Serve uploaded media through Django so profile photos work on Vercel too.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

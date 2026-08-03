@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -126,7 +127,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / '.vercel' / 'output' / 'static'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path('/tmp/media') if os.environ.get('VERCEL') else BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Vercel can serve Django admin assets directly from the bundled finders.
