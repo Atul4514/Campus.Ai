@@ -2,62 +2,374 @@
 {% block title %}Student Management{% endblock %}
 {% block wrapper_class %}{% endblock %}
 {% block content %}
-<div class="dash-wrapper">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h3 class="text-white mb-0">Student Management</h3>
-            <span class="badge-role text-white">ADMIN CONTROL</span>
-        </div>
-        <a href="{% url 'dashboard_page' %}" class="btn btn-outline-light rounded-3">
-            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
-        </a>
+<style>
+  /* ── Page Layout ── */
+  .sm-page { max-width: 1300px; margin: 0 auto; padding: 2rem 1.25rem; }
+
+  /* ── Header ── */
+  .sm-header { margin-bottom: 2rem; }
+  .sm-header h2 { font-size: 1.75rem; font-weight: 800; color: #fff; margin: 0; letter-spacing: -0.3px; }
+  .sm-header p { color: rgba(255,255,255,0.65); margin: 0.2rem 0 0; font-size: 0.9rem; }
+
+  /* ── Stat Cards ── */
+  .sm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .sm-stat {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 16px;
+    padding: 1.2rem 1.4rem;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .sm-stat:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,0.2); }
+  .sm-stat-value { font-size: 2rem; font-weight: 800; color: #fff; line-height: 1; }
+  .sm-stat-label { font-size: 0.78rem; color: rgba(255,255,255,0.65); margin-top: 0.3rem; letter-spacing: 0.4px; text-transform: uppercase; }
+  .sm-stat-icon { font-size: 1.3rem; margin-bottom: 0.5rem; }
+
+  /* ── Filter Panel ── */
+  .sm-filters {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-soft);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+  .sm-filters .filter-group { display: flex; flex-direction: column; gap: 0.3rem; flex: 1 1 160px; }
+  .sm-filters label { font-size: 0.77rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .sm-filters .form-control,
+  .sm-filters .form-select { border-radius: 10px; font-size: 0.875rem; min-width: 0; }
+  .sm-filters .filter-search { flex: 2 1 240px; }
+  .filter-btn { border-radius: 10px; font-weight: 600; font-size: 0.875rem; padding: 0.6rem 1.2rem; white-space: nowrap; }
+
+  /* ── Student Grid ── */
+  .sm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 1.25rem; }
+
+  /* ── Student Card ── */
+  .student-card {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    animation: fadeInUp 0.4s ease both;
+    position: relative;
+  }
+  .student-card:hover { transform: translateY(-5px); box-shadow: 0 18px 40px rgba(0,0,0,0.25); }
+  .student-card-banner {
+    height: 72px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    position: relative;
+  }
+  .student-card-body { padding: 0 1.25rem 1.25rem; }
+  .student-avatar-wrap {
+    position: relative;
+    display: inline-block;
+    margin-top: -40px;
+    margin-bottom: 0.6rem;
+  }
+  .student-avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--surface-solid);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    background: #374151;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: #f9fafb;
+    overflow: hidden;
+  }
+  .student-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .student-name { font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.1rem; }
+  .student-meta { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+  .student-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0; }
+  .student-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.22rem 0.65rem;
+    border-radius: 20px;
+    background: rgba(99,102,241,0.12);
+    color: var(--primary);
+    border: 1px solid rgba(99,102,241,0.2);
+  }
+  .student-tag.dept { background: rgba(6,182,212,0.1); color: #0891b2; border-color: rgba(6,182,212,0.2); }
+  .student-tag.section { background: rgba(245,158,11,0.1); color: #b45309; border-color: rgba(245,158,11,0.2); }
+
+  /* ── Completion Bar ── */
+  .completion-wrap { margin: 0.8rem 0; }
+  .completion-label { font-size: 0.73rem; color: var(--text-muted); margin-bottom: 0.25rem; display: flex; justify-content: space-between; }
+  .completion-bar { height: 5px; border-radius: 10px; background: rgba(0,0,0,0.08); overflow: hidden; }
+  .completion-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
+
+  /* ── Card Actions ── */
+  .student-card-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .student-card-actions .btn { flex: 1; font-size: 0.8rem; font-weight: 600; border-radius: 10px; padding: 0.45rem 0; }
+
+  /* ── Empty State ── */
+  .sm-empty {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: rgba(255,255,255,0.6);
+  }
+  .sm-empty i { font-size: 4rem; display: block; margin-bottom: 1rem; opacity: 0.5; }
+  .sm-empty p { font-size: 1.05rem; }
+
+  /* ── Pagination ── */
+  .sm-pagination { display: flex; justify-content: center; gap: 0.4rem; margin-top: 2rem; flex-wrap: wrap; }
+  .sm-pagination a, .sm-pagination span {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    font-size: 0.875rem; font-weight: 600;
+    text-decoration: none;
+    transition: all 0.18s ease;
+  }
+  .sm-pagination a { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.18); }
+  .sm-pagination a:hover { background: rgba(255,255,255,0.22); color: #fff; }
+  .sm-pagination span.current { background: var(--primary); color: #fff; border: none; }
+  .sm-pagination span.disabled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.08); }
+
+  /* ── Delete Modal ── */
+  .modal-content {
+    background: var(--surface-solid);
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+  }
+  .modal-header { border-bottom: 1px solid var(--border-soft); }
+  .modal-footer { border-top: 1px solid var(--border-soft); }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="sm-page">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start sm-header flex-wrap gap-2">
+    <div>
+      <h2><i class="bi bi-mortarboard-fill me-2"></i>Student Management</h2>
+      <p>Manage, search and filter all registered students</p>
     </div>
+    <a href="{% url 'dashboard_page' %}" class="btn btn-outline-light rounded-3">
+      <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+  </div>
 
-    <div class="glass-card p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <h5 class="mb-0" style="color: var(--text-main);"><i class="bi bi-mortarboard me-2"></i>Registered Students</h5>
-            <span class="badge-role text-white">{{ students.count }} Total</span>
-        </div>
-
-        <form method="get" class="mb-3">
-            <div class="input-group">
-                <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by name, username, college ID or department">
-                <button class="btn btn-primary-custom text-white" type="submit">Search</button>
-            </div>
-        </form>
-
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>College ID</th>
-                        <th>Department</th>
-                        <th>Semester / Section</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                    <tr>
-                        <td>{{ student.full_name|default:student.username }}</td>
-                        <td>{{ student.username }}</td>
-                        <td>{{ student.college_id }}</td>
-                        <td>{{ student.department|default:'-' }}</td>
-                        <td>{{ student.student_profile.semester|default:'-' }} / {{ student.student_profile.section|default:'-' }}</td>
-                        <td>
-                            <a href="{% url 'student_management:student_profile' student.id %}" class="btn btn-sm btn-primary-custom">Manage Profile</a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">No students found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+  <!-- Stats -->
+  <div class="sm-stats">
+    <div class="sm-stat">
+      <div class="sm-stat-icon">🎓</div>
+      <div class="sm-stat-value">{{ total_students }}</div>
+      <div class="sm-stat-label">Total Students</div>
     </div>
+    {% for year, count in year_counts.items %}
+    <div class="sm-stat">
+      <div class="sm-stat-icon">📚</div>
+      <div class="sm-stat-value">{{ count }}</div>
+      <div class="sm-stat-label">{{ year }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="sm-filters">
+    <div class="filter-group filter-search">
+      <label>Search</label>
+      <input type="text" name="q" value="{{ query }}" class="form-control"
+             placeholder="Name, username, college ID...">
+    </div>
+    <div class="filter-group">
+      <label>Year</label>
+      <select name="year" class="form-select">
+        {% for val, label in year_choices %}
+        <option value="{{ val }}" {% if year_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Department</label>
+      <input type="text" name="dept" value="{{ dept_filter }}" class="form-control"
+             placeholder="e.g. CSE">
+    </div>
+    <div class="filter-group">
+      <label>Section</label>
+      <input type="text" name="section" value="{{ section_filter }}" class="form-control"
+             placeholder="e.g. A">
+    </div>
+    <div class="d-flex gap-2 align-items-end">
+      <button type="submit" class="btn btn-primary-custom text-white filter-btn">
+        <i class="bi bi-funnel me-1"></i> Filter
+      </button>
+      <a href="{% url 'student_management:manage_students' %}" class="btn btn-outline-light filter-btn">
+        <i class="bi bi-x-circle"></i>
+      </a>
+    </div>
+  </form>
+
+  <!-- Results count -->
+  {% if query or year_filter or dept_filter or section_filter %}
+  <p class="text-white mb-3" style="font-size: 0.875rem; opacity: 0.75;">
+    Showing {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}
+    {% if query %}for "<strong>{{ query }}</strong>"{% endif %}
+  </p>
+  {% endif %}
+
+  <!-- Grid -->
+  {% if students %}
+  <div class="sm-grid">
+    {% for student in students %}
+    {% with profile=student.student_profile %}
+    {% with pct=profile.profile_completion %}
+    <div class="student-card" style="animation-delay: {{ forloop.counter0 }}00ms;">
+      <div class="student-card-banner"></div>
+      <div class="student-card-body">
+        <div class="student-avatar-wrap">
+          <div class="student-avatar">
+            {% if profile.profile_photo %}
+              <img src="{{ profile.profile_photo.url }}" alt="{{ student.full_name }}">
+            {% else %}
+              <i class="bi bi-person-fill"></i>
+            {% endif %}
+          </div>
+        </div>
+
+        <h6 class="student-name">{{ student.full_name|default:student.username }}</h6>
+        <p class="student-meta">
+          <i class="bi bi-card-heading me-1"></i>{{ student.college_id|default:'No ID' }}
+          {% if profile.roll_number %} · #{{ profile.roll_number }}{% endif %}
+        </p>
+
+        <div class="student-tags">
+          {% if student.department %}
+          <span class="student-tag dept"><i class="bi bi-building me-1"></i>{{ student.department }}</span>
+          {% endif %}
+          {% if profile.year %}
+          <span class="student-tag"><i class="bi bi-calendar3 me-1"></i>{{ profile.year }}</span>
+          {% endif %}
+          {% if profile.semester %}
+          <span class="student-tag"><i class="bi bi-collection me-1"></i>Sem {{ profile.semester }}</span>
+          {% endif %}
+          {% if profile.section %}
+          <span class="student-tag section"><i class="bi bi-grid me-1"></i>Sec {{ profile.section }}</span>
+          {% endif %}
+          {% if not student.department and not profile.year and not profile.semester and not profile.section %}
+          <span class="student-tag" style="opacity:0.5;">No academic info</span>
+          {% endif %}
+        </div>
+
+        <!-- Profile Completion Bar -->
+        <div class="completion-wrap">
+          <div class="completion-label">
+            <span>Profile Completion</span>
+            <span style="font-weight: 700; color: {% if pct >= 80 %}#22c55e{% elif pct >= 50 %}#f59e0b{% else %}#ef4444{% endif %};">{{ pct }}%</span>
+          </div>
+          <div class="completion-bar">
+            <div class="completion-fill" style="width: {{ pct }}%; background: {% if pct >= 80 %}linear-gradient(90deg,#22c55e,#16a34a){% elif pct >= 50 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#ef4444,#dc2626){% endif %};"></div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="student-card-actions">
+          <a href="{% url 'student_management:student_profile' student.id %}"
+             class="btn btn-primary-custom text-white">
+            <i class="bi bi-person-lines-fill me-1"></i> Profile
+          </a>
+          <button class="btn btn-outline-danger" type="button"
+                  onclick="confirmDelete({{ student.id }}, '{{ student.full_name|default:student.username|escapejs }}')">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+    {% endwith %}
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <nav class="sm-pagination" aria-label="Student pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&year={{ year_filter }}&dept={{ dept_filter }}&section={{ section_filter }}">
+      <i class="bi bi-chevron-left"></i>
+    </a>
+    {% else %}
+    <span class="disabled"><i class="bi bi-chevron-left"></i></span>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <span class="current">{{ num }}</span>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?page={{ num }}&q={{ query }}&year={{ year_filter }}&dept={{ dept_filter }}&section={{ section_filter }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&year={{ year_filter }}&dept={{ dept_filter }}&section={{ section_filter }}">
+      <i class="bi bi-chevron-right"></i>
+    </a>
+    {% else %}
+    <span class="disabled"><i class="bi bi-chevron-right"></i></span>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="sm-empty">
+    <i class="bi bi-search"></i>
+    <p>No students found matching your filters.</p>
+    <a href="{% url 'student_management:manage_students' %}" class="btn btn-outline-light mt-2">Clear Filters</a>
+  </div>
+  {% endif %}
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel" style="color:var(--text-main);">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Delete Student
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="color:var(--text-main);">
+        <p>Are you sure you want to permanently delete <strong id="deleteStudentName"></strong>?</p>
+        <p class="text-danger small mb-0">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          This will delete the user account and all associated data. This action cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
+        <form id="deleteForm" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger rounded-3">
+            <i class="bi bi-trash3 me-1"></i> Delete Permanently
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDelete(studentId, studentName) {
+  document.getElementById('deleteStudentName').textContent = studentName;
+  document.getElementById('deleteForm').action = `/api/student-management/students/${studentId}/delete/`;
+  const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+  modal.show();
+}
+</script>
 {% endblock %}

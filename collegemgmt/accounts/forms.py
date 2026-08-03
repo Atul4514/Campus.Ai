@@ -76,8 +76,9 @@ class RegisterForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'college_id', 'department', 'phone']
+        fields = ['full_name', 'username', 'email', 'college_id', 'department', 'phone']
         widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Display Name'}),
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}),
             'college_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'College ID'}),

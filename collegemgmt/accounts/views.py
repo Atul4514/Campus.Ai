@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
-from core.permissions import IsAdmin
+from core.permissions import IsAdmin, IsOwnerOrAdmin, OwnerOrAdminFilterBackend
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
 from .forms import RegisterForm, LoginForm
 
@@ -35,12 +35,21 @@ def check_college_id(request):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    filter_backends = [OwnerOrAdminFilterBackend]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not (user and user.is_authenticated):
+            return User.objects.none()
+        if getattr(user, 'role', None) == 'admin':
+            return User.objects.all()
+        return User.objects.filter(pk=user.pk)
 
     def get_permissions(self):
-        if self.action in ['list', 'destroy']:
+        if self.action == 'destroy':
             return [IsAdmin()]
-        return [IsAuthenticated()]
+        return [IsAuthenticated(), IsOwnerOrAdmin()]
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):

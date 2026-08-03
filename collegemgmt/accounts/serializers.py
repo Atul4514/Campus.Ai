@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     college_id = serializers.CharField(max_length=20)
+    full_name = serializers.CharField(max_length=150, allow_blank=False, trim_whitespace=True)
 
     class Meta:
         model = User

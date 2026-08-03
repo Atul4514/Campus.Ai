@@ -26,6 +26,7 @@ env/
 ENV/
 bin/
 Scripts/
+.npm-cache/
 
 # Django
 *.log
