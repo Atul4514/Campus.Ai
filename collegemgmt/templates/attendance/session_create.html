@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Create Attendance Session | CampusAI{% endblock %}
+{% block wrapper_class %}{% endblock %}
+{% block extra_styles %}
+<style>
+    #id_department[readonly],
+    #id_semester[readonly] {
+        background: var(--surface) !important;
+        color: var(--text-main) !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+        cursor: default;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dash-wrapper" style="max-width: 780px;">
+    <div class="mb-4">
+        <a href="{% url 'attendance:session_list' %}" class="btn btn-outline-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Sessions
+        </a>
+        <h3 class="fw-bold mb-1">Create Attendance Session</h3>
+        <p class="text-muted small mb-0">Select class details and date to initiate roll call.</p>
+    </div>
+
+    {% if subjects %}
+    <div class="glass-card p-3 mb-4 bg-primary-subtle border-primary-subtle">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-lightning-charge-fill text-primary"></i>
+            <span class="fw-semibold text-primary small">Quick Fill from Your Assigned Subjects:</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            {% for a in subjects %}
+            <button type="button" class="btn btn-sm btn-outline-primary bg-white text-dark shadow-sm subject-quick-btn"
+                    data-subject-id="{{ a.subject_id }}"
+                    data-dept="{{ a.subject.department }}"
+                    data-sem="{{ a.subject.semester }}"
+                    data-sec="{{ a.section }}">
+                <span class="fw-bold text-primary">{{ a.subject.name }}</span>
+                <span class="text-muted small ms-1">({{ a.subject.department }} · Sem {{ a.subject.semester }}{% if a.section %} · Sec {{ a.section }}{% endif %})</span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="glass-card p-4">
+        <form method="post" novalidate id="sessionForm">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger rounded-3 py-2 px-3 mb-3 small">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold small">Date of Lecture <span class="text-danger">*</span></label>
+                    {{ form.date }}
+                    {% if form.date.errors %}<div class="field-error">{{ form.date.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold small">Subject Name <span class="text-danger">*</span></label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}<div class="field-error">{{ form.subject.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small">Department <span class="text-danger">*</span></label>
+                    {{ form.department }}
+                    {% if form.department.errors %}<div class="field-error">{{ form.department.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small">Semester (1–8) <span class="text-danger">*</span></label>
+                    {{ form.semester }}
+                    {% if form.semester.errors %}<div class="field-error">{{ form.semester.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small">Section (Optional)</label>
+                    {{ form.section }}
+                    {% if form.section.errors %}<div class="field-error">{{ form.section.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold small">Lecture Topic / Notes (Optional)</label>
+                {{ form.topic }}
+                <div class="form-text small">e.g. Unit 3: Dynamic Memory Allocation & Pointers</div>
+                {% if form.topic.errors %}<div class="field-error">{{ form.topic.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                <a href="{% url 'attendance:session_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary-custom d-flex align-items-center gap-2">
+                    <span>Create & Start Roll Call</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ subject_metadata|json_script:'attendance-subject-metadata' }}
+<script>
+    // Default date input to today if empty
+    const dateInput = document.querySelector('input[name="date"]');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+
+    const subjectInput = document.querySelector('select[name="subject"]');
+    const departmentInput = document.querySelector('input[name="department"]');
+    const semesterInput = document.querySelector('input[name="semester"]');
+    const subjectMetadata = JSON.parse(document.getElementById('attendance-subject-metadata').textContent);
+    const subjectDetails = new Map(subjectMetadata.map(subject => [String(subject.id), subject]));
+
+    function updateSubjectDetails() {
+        const details = subjectDetails.get(subjectInput?.value);
+        if (departmentInput) departmentInput.value = details?.department || '';
+        if (semesterInput) semesterInput.value = details?.semester || '';
+    }
+
+    subjectInput?.addEventListener('change', updateSubjectDetails);
+    updateSubjectDetails();
+
+    // Quick fill handlers
+    document.querySelectorAll('.subject-quick-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const sec = this.dataset.sec;
+
+            const secInput = document.querySelector('input[name="section"]');
+
+            if (subjectInput) {
+                subjectInput.value = this.dataset.subjectId;
+                subjectInput.dispatchEvent(new Event('change'));
+            }
+            if (secInput) secInput.value = sec;
+
+            // Visual feedback
+            this.classList.add('btn-primary', 'text-white');
+            this.classList.remove('btn-outline-primary', 'text-dark', 'bg-white');
+            setTimeout(() => {
+                this.classList.remove('btn-primary', 'text-white');
+                this.classList.add('btn-outline-primary', 'text-dark', 'bg-white');
+            }, 500);
+        });
+    });
+</script>
+{% endblock %}

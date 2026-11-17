@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Report & Analytics | CampusAI{% endblock %}
+{% block wrapper_class %}{% endblock %}
+
+{% block content %}
+<main class="dash-wrapper">
+    <!-- Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <a href="{% url 'attendance:session_list' %}" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left me-1"></i> Back to Sessions
+            </a>
+            <h3 class="fw-bold mb-0">Attendance Reports & Analytics</h3>
+            <p class="text-muted small mb-0">Comprehensive department and semester-level student presence records.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'attendance:export_csv' %}?department={{ filters.department }}&semester={{ filters.semester }}&section={{ filters.section }}&subject={{ filters.subject }}" class="btn btn-outline-success d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                <span>Export CSV</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Form Card -->
+    <div class="glass-card p-4 mb-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Department</label>
+                <input type="text" name="department" class="form-control form-control-sm" placeholder="e.g. Computer Science" value="{{ filters.department }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Semester (1–8)</label>
+                <input type="number" name="semester" min="1" max="8" class="form-control form-control-sm" placeholder="e.g. 3" value="{{ filters.semester }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Section</label>
+                <input type="text" name="section" class="form-control form-control-sm" placeholder="e.g. A" value="{{ filters.section }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Subject</label>
+                <input type="text" name="subject" class="form-control form-control-sm" placeholder="e.g. Operating Systems" value="{{ filters.subject }}">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary-custom btn-sm w-100">
+                    <i class="bi bi-funnel-fill me-1"></i> Filter
+                </button>
+                <a href="{% url 'attendance:attendance_report' %}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Top 5 Students Leaderboard -->
+    {% if top_students %}
+    <div class="glass-card p-4 mb-4" data-aos="fade-up">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <div>
+                <h5 class="mb-1 fw-bold text-main d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-trophy-fill"></i></span>
+                    Top 5 Students with Highest Attendance
+                </h5>
+                <p class="text-muted small mb-0">Highest overall presence in the selected criteria</p>
+            </div>
+        </div>
+        <div class="row g-3">
+            {% for st in top_students %}
+            <div class="col-lg col-md-4 col-sm-6">
+                <div class="stat-card p-3 h-100 d-flex flex-column justify-content-between position-relative card-hover" style="border-radius: var(--r-lg);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if forloop.counter == 1 %}
+                                <span class="badge rounded-circle p-2 bg-warning text-dark fs-6 shadow-sm" title="Rank 1">🥇</span>
+                            {% elif forloop.counter == 2 %}
+                                <span class="badge rounded-circle p-2 bg-secondary-subtle text-secondary fs-6 shadow-sm" title="Rank 2">🥈</span>
+                            {% elif forloop.counter == 3 %}
+                                <span class="badge rounded-circle p-2 bg-danger-subtle text-danger fs-6 shadow-sm" title="Rank 3">🥉</span>
+                            {% else %}
+                                <span class="badge rounded-pill bg-light text-muted border px-2 py-1 fw-bold">#{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="badge {% if st.percentage >= 75 %}bg-success-subtle text-success{% elif st.percentage >= 50 %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %} fw-bold px-2 py-1">
+                            {{ st.percentage }}%
+                        </span>
+                    </div>
+
+                    <div>
+                        <h6 class="fw-bold mb-1 text-truncate text-main" title="{{ st.name }}">{{ st.name }}</h6>
+                        {% if st.college_id %}
+                        <div class="small text-muted mb-1">
+                            <code>{{ st.college_id }}</code>
+                        </div>
+                        {% endif %}
+                        {% if st.department %}
+                        <div class="small text-muted text-truncate" style="font-size: 0.78rem;">
+                            {{ st.department }}{% if st.semester %} · Sem {{ st.semester }}{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-3 pt-2 border-top">
+                        <div class="d-flex justify-content-between text-muted small mb-1" style="font-size: 0.74rem;">
+                            <span>Attended</span>
+                            <span class="fw-semibold text-main">{{ st.present }}/{{ st.total }}</span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar {% if st.percentage >= 75 %}bg-success{% elif st.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ st.percentage }}%;" aria-valuenow="{{ st.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Report Table Card -->
+    <div class="glass-card p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <div>
+                <h5 class="fw-bold mb-1">Student Attendance Roll Summary</h5>
+                <span class="text-muted small">Showing {{ report_rows|length }} students</span>
+            </div>
+            <input type="text" id="reportSearch" class="form-control form-control-sm" placeholder="Search student name..." style="max-width: 220px;">
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="reportTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Student Name</th>
+                        <th>College ID</th>
+                        <th>Department</th>
+                        <th>Semester</th>
+                        <th class="text-center">Classes Held</th>
+                        <th class="text-center">Attended</th>
+                        <th class="text-center">Missed</th>
+                        <th class="text-center">Percentage</th>
+                        <th class="text-end">Academic Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in report_rows %}
+                    <tr>
+                        <td class="text-muted small">{{ forloop.counter }}</td>
+                        <td class="fw-bold text-main">{{ r.name }}</td>
+                        <td><code>{{ r.college_id }}</code></td>
+                        <td>{{ r.department }}</td>
+                        <td>Sem {{ r.semester }}</td>
+                        <td class="text-center">{{ r.total }}</td>
+                        <td class="text-center text-success fw-semibold">{{ r.present }}</td>
+                        <td class="text-center text-danger fw-semibold">{{ r.absent }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-{{ r.status_class }}-subtle text-{{ r.status_class }} fw-bold px-2 py-1">
+                                {{ r.percentage }}%
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            {% if r.percentage >= 75 %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Eligible (≥75%)
+                                </span>
+                            {% elif r.percentage >= 60 %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Warning (60-74%)
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                    <i class="bi bi-x-octagon-fill me-1"></i> Shortage (<60%)
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="bi bi-search fs-2 d-block mb-2 opacity-50"></i>
+                            <h5>No records match your criteria</h5>
+                            <p class="small mb-0">Try clearing filters or check if attendance sessions have been conducted.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.getElementById('reportSearch')?.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        document.querySelectorAll('#reportTable tbody tr').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Manage Subjects | CampusAI{% endblock %}
+{% block wrapper_class %}{% endblock %}
+
+{% block content %}
+<main class="dash-wrapper">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-journal-bookmark-fill me-2 text-primary"></i>Subject Catalogue</h3>
+            <p class="text-muted mb-0">Add subjects by department and semester for timetable and attendance.</p>
+        </div>
+        <a href="{% url 'dashboard_page' %}" class="btn btn-outline-secondary rounded-3">
+            <i class="bi bi-arrow-left me-1"></i> Admin Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-4">
+            <section class="glass-card p-4">
+                <h5 class="fw-bold mb-3">Add a Subject</h5>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+                    {% endif %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="bi bi-plus-circle me-1"></i> Add Subject
+                    </button>
+                </form>
+            </section>
+        </div>
+
+        <div class="col-lg-8">
+            <section class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">Existing Subjects</h5>
+                        <span class="text-muted small">{{ total_subjects }} subject{{ total_subjects|pluralize }}</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>Subject</th><th>Department</th><th>Semester</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for subject in subjects %}
+                            <tr>
+                                <td class="fw-semibold">{{ subject.name }}</td>
+                                <td>{{ subject.department }}</td>
+                                <td><span class="badge bg-primary-subtle text-primary">Semester {{ subject.semester }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted py-4">No subjects yet. Add the first one using the form.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+{% endblock %}

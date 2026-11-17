@@ -2,9 +2,10 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from academics.models import Subject
 from .forms import StudentProfileForm
 from .models import StudentProfile
 
@@ -22,6 +23,21 @@ YEAR_FILTER_CHOICES = [
 def _ensure_student_profile(user):
     if user.role == 'student' and not hasattr(user, 'student_profile'):
         StudentProfile.objects.create(user=user)
+
+
+def _get_student_subjects(student, profile):
+    """Return queryset of Subject objects for a student based on dept+semester."""
+    dept = getattr(student, 'department', '') or ''
+    semester = profile.semester or ''
+    if dept and semester:
+        try:
+            return Subject.objects.filter(
+                department__iexact=dept,
+                semester=int(semester),
+            ).order_by('name')
+        except (ValueError, TypeError):
+            pass
+    return Subject.objects.none()
 
 
 @login_required(login_url='login_page')
@@ -52,20 +68,25 @@ def manage_students(request):
     if section_filter:
         students = students.filter(student_profile__section__iexact=section_filter)
 
-    for student in students:
-        _ensure_student_profile(student)
+    # Ensure every visible student has a profile (handles legacy/admin-created accounts)
+    for s in students:
+        if not hasattr(s, 'student_profile') or s.student_profile is None:
+            StudentProfile.objects.get_or_create(user=s)
 
     # --- Pagination ---
     paginator = Paginator(students, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # --- Stats ---
-    all_students = User.objects.filter(role='student')
-    total = all_students.count()
-    year_counts = {}
-    for yc in ['First Year', 'Second Year', 'Third Year', 'Fourth Year']:
-        year_counts[yc] = StudentProfile.objects.filter(year=yc).count()
+    # --- Stats: single aggregated query instead of 4 COUNTs ---
+    year_counts = StudentProfile.objects.values('year').annotate(cnt=Count('id'))
+    year_counts_dict = {row['year']: row['cnt'] for row in year_counts}
+    # Normalise to the expected keys
+    year_counts = {
+        yc: year_counts_dict.get(yc, 0)
+        for yc in ['First Year', 'Second Year', 'Third Year', 'Fourth Year']
+    }
+    total = User.objects.filter(role='student').count()
 
     return render(request, 'accounts/student_management.html', {
         'page_obj': page_obj,
@@ -86,14 +107,19 @@ def student_profile_view(request, student_id=None):
         student = request.user
         _ensure_student_profile(student)
         profile = student.student_profile
+        saved = False
         if request.method == 'POST':
             form = StudentProfileForm(request.POST, request.FILES, instance=profile)
             if form.is_valid():
                 form.save()
+                # Refresh profile from DB so updated semester/dept is reflected
+                profile.refresh_from_db()
+                student.refresh_from_db()
+                saved = True
                 messages.success(request, 'Your profile was updated successfully.')
-                return redirect('student_management:my_profile')
         else:
             form = StudentProfileForm(instance=profile)
+        subjects = _get_student_subjects(student, profile)
         return render(
             request,
             'accounts/student_profile.html',
@@ -103,6 +129,8 @@ def student_profile_view(request, student_id=None):
                 'profile': profile,
                 'is_own_profile': True,
                 'can_edit': True,
+                'subjects': subjects,
+                'saved': saved,
             },
         )
 
@@ -113,14 +141,27 @@ def student_profile_view(request, student_id=None):
     student = get_object_or_404(User, id=student_id, role='student')
     _ensure_student_profile(student)
     profile = student.student_profile
+    if request.user.role == 'faculty':
+        from faculty.models import SubjectAssignment
+        assigned = SubjectAssignment.objects.filter(
+            faculty__user=request.user,
+            department__iexact=student.department,
+            semester=int(profile.semester or 0),
+        ).filter(Q(section='') | Q(section__iexact=profile.section)).exists()
+        if not assigned:
+            messages.error(request, 'You can access only students in one of your assigned classes.')
+            return redirect('dashboard_page')
     if request.method == 'POST':
         form = StudentProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             form.save()
+            profile.refresh_from_db()
+            student.refresh_from_db()
             messages.success(request, f'Academic profile updated for {student.full_name or student.username}.')
             return redirect('student_management:manage_students')
     else:
         form = StudentProfileForm(instance=profile)
+    subjects = _get_student_subjects(student, profile)
     return render(
         request,
         'accounts/student_profile.html',
@@ -130,6 +171,7 @@ def student_profile_view(request, student_id=None):
             'profile': profile,
             'is_own_profile': False,
             'can_edit': True,
+            'subjects': subjects,
         },
     )
 

@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% block title %}Mark Attendance — {{ session.subject }} | CampusAI{% endblock %}
+{% block wrapper_class %}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .avatar-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), #818cf8);
+        color: white;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .status-btn-group .btn-check:checked + .btn-outline-success {
+        background-color: #16a34a !important;
+        color: white !important;
+        border-color: #16a34a !important;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+    }
+    .status-btn-group .btn-check:checked + .btn-outline-danger {
+        background-color: #dc2626 !important;
+        color: white !important;
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+    }
+    .status-btn-group .btn-check:checked + .btn-outline-warning {
+        background-color: #d97706 !important;
+        color: white !important;
+        border-color: #d97706 !important;
+        box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25);
+    }
+    .status-btn-group .btn-check:checked + .btn-outline-info {
+        background-color: #0284c7 !important;
+        color: white !important;
+        border-color: #0284c7 !important;
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
+    }
+    .sticky-bottom-bar {
+        position: sticky;
+        bottom: 16px;
+        z-index: 100;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        backdrop-filter: blur(8px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dash-wrapper pb-5">
+    <!-- Header banner -->
+    <div class="mb-4">
+        <a href="{% url 'attendance:session_list' %}" class="btn btn-outline-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Sessions
+        </a>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary text-white fw-bold">{{ session.subject.department }} · Sem {{ session.subject.semester }}{% if session.section %} ({{ session.section }}){% endif %}</span>
+                    <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-calendar3 me-1"></i>{{ session.date|date:"l, d M Y" }}</span>
+                </div>
+                <h3 class="fw-bold mb-1">{{ session.subject }}</h3>
+                {% if session.topic %}
+                <p class="text-muted mb-0 small"><i class="bi bi-journal-text me-1"></i>{{ session.topic }}</p>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'attendance:session_detail' session.pk %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-eye me-1"></i> View Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Counters & Bulk Actions Card -->
+    <div class="glass-card p-3 mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-lg-6 d-flex flex-wrap gap-2 align-items-center">
+                <span class="fw-bold small text-muted text-uppercase me-2">Roster Stats:</span>
+                <span class="badge bg-light text-dark border px-2 py-1">
+                    Total: <strong id="countTotal">{{ student_data|length }}</strong>
+                </span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <i class="bi bi-check-circle-fill me-1"></i>Present: <strong id="countP">0</strong>
+                </span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                    <i class="bi bi-x-circle-fill me-1"></i>Absent: <strong id="countA">0</strong>
+                </span>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                    <i class="bi bi-clock-fill me-1"></i>Late: <strong id="countL">0</strong>
+                </span>
+                <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
+                    <i class="bi bi-shield-check me-1"></i>Excused: <strong id="countE">0</strong>
+                </span>
+            </div>
+            <div class="col-lg-6 d-flex flex-wrap justify-content-lg-end gap-2 align-items-center">
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-success" id="btnMarkAllPresent">
+                        <i class="bi bi-check-all me-1"></i> Mark All Present
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" id="btnMarkAllAbsent">
+                        <i class="bi bi-x-lg me-1"></i> Mark All Absent
+                    </button>
+                </div>
+                <input type="text" id="studentFilter" class="form-control form-control-sm" placeholder="Filter by name / ID..." style="max-width: 180px;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Form Formset -->
+    <form method="post" id="attendanceForm">
+        {% csrf_token %}
+
+        <div class="glass-card p-0 mb-4 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="studentRosterTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;" class="text-center">#</th>
+                            <th style="min-width: 200px;">Student Information</th>
+                            <th style="min-width: 260px;" class="text-center">Status</th>
+                            <th style="min-width: 200px;">Remarks (Optional)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in student_data %}
+                        <tr class="student-row" data-name="{{ row.user.full_name|lower }}" data-id="{{ row.user.college_id|lower }}">
+                            <td class="text-center text-muted small fw-medium">{{ forloop.counter }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-circle shadow-sm">
+                                        {{ row.user.full_name|default:row.user.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-main">{{ row.user.full_name|default:row.user.username }}</div>
+                                        <div class="small text-muted">
+                                            <span>ID: <code class="text-primary">{{ row.user.college_id }}</code></span>
+                                            {% if row.user.student_profile.roll_number %}
+                                            <span class="ms-2">Roll: {{ row.user.student_profile.roll_number }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm status-btn-group" role="group">
+                                    <!-- Present -->
+                                    <input type="radio" class="btn-check status-radio" name="status_{{ row.user.pk }}" id="status_p_{{ row.user.pk }}" value="P" {% if row.status == 'P' %}checked{% endif %}>
+                                    <label class="btn btn-outline-success px-3 fw-semibold" for="status_p_{{ row.user.pk }}" title="Present">
+                                        <i class="bi bi-check-lg"></i> P
+                                    </label>
+
+                                    <!-- Absent -->
+                                    <input type="radio" class="btn-check status-radio" name="status_{{ row.user.pk }}" id="status_a_{{ row.user.pk }}" value="A" {% if row.status == 'A' %}checked{% endif %}>
+                                    <label class="btn btn-outline-danger px-3 fw-semibold" for="status_a_{{ row.user.pk }}" title="Absent">
+                                        <i class="bi bi-x-lg"></i> A
+                                    </label>
+
+                                    <!-- Late -->
+                                    <input type="radio" class="btn-check status-radio" name="status_{{ row.user.pk }}" id="status_l_{{ row.user.pk }}" value="L" {% if row.status == 'L' %}checked{% endif %}>
+                                    <label class="btn btn-outline-warning px-3 fw-semibold" for="status_l_{{ row.user.pk }}" title="Late">
+                                        <i class="bi bi-clock"></i> L
+                                    </label>
+
+                                    <!-- Excused -->
+                                    <input type="radio" class="btn-check status-radio" name="status_{{ row.user.pk }}" id="status_e_{{ row.user.pk }}" value="E" {% if row.status == 'E' %}checked{% endif %}>
+                                    <label class="btn btn-outline-info px-3 fw-semibold" for="status_e_{{ row.user.pk }}" title="Excused / On Duty">
+                                        <i class="bi bi-shield-check"></i> E
+                                    </label>
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" name="remarks_{{ row.user.pk }}" value="{{ row.remarks }}" class="form-control form-control-sm" placeholder="e.g. Approved leave...">
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
+                                <h5>No students found in this audience</h5>
+                                <p class="small mb-0">Ensure students have registered with Department: <strong>{{ session.subject.department }}</strong> and Semester: <strong>{{ session.subject.semester }}</strong>{% if session.section %}, Section: <strong>{{ session.section }}</strong>{% endif %}.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sticky Bottom Save Action Bar -->
+        {% if student_data %}
+        <div class="sticky-bottom-bar p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle text-primary"></i>
+                <span class="small text-muted">Changes are not saved until you click the save button.</span>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'attendance:session_list' %}" class="btn btn-outline-secondary btn-sm">Discard</a>
+                <button type="submit" class="btn btn-primary-custom d-flex align-items-center gap-2 shadow">
+                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                    <span>Save Attendance</span>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function updateCounts() {
+        let p = 0, a = 0, l = 0, e = 0;
+        document.querySelectorAll('.status-radio:checked').forEach(radio => {
+            if (radio.value === 'P') p++;
+            else if (radio.value === 'A') a++;
+            else if (radio.value === 'L') l++;
+            else if (radio.value === 'E') e++;
+        });
+        const countPEl = document.getElementById('countP');
+        const countAEl = document.getElementById('countA');
+        const countLEl = document.getElementById('countL');
+        const countEEl = document.getElementById('countE');
+        if (countPEl) countPEl.innerText = p;
+        if (countAEl) countAEl.innerText = a;
+        if (countLEl) countLEl.innerText = l;
+        if (countEEl) countEEl.innerText = e;
+    }
+
+    // Mark all present
+    document.getElementById('btnMarkAllPresent')?.addEventListener('click', () => {
+        document.querySelectorAll('.student-row').forEach(row => {
+            if (row.style.display !== 'none') {
+                const radio = row.querySelector('.status-radio[value="P"]');
+                if (radio) radio.checked = true;
+            }
+        });
+        updateCounts();
+    });
+
+    // Mark all absent
+    document.getElementById('btnMarkAllAbsent')?.addEventListener('click', () => {
+        document.querySelectorAll('.student-row').forEach(row => {
+            if (row.style.display !== 'none') {
+                const radio = row.querySelector('.status-radio[value="A"]');
+                if (radio) radio.checked = true;
+            }
+        });
+        updateCounts();
+    });
+
+    // Student roster search
+    document.getElementById('studentFilter')?.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        document.querySelectorAll('.student-row').forEach(row => {
+            const name = row.dataset.name;
+            const id = row.dataset.id;
+            row.style.display = (name.includes(q) || id.includes(q)) ? '' : 'none';
+        });
+    });
+
+    // Listen to changes
+    document.querySelectorAll('.status-radio').forEach(radio => {
+        radio.addEventListener('change', updateCounts);
+    });
+
+    // Initial calculation on page load
+    updateCounts();
+</script>
+{% endblock %}

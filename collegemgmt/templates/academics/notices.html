@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Notice Board | CampusAI{% endblock %}
+{% block wrapper_class %}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .pinned-card {
+        border-left: 4px solid #f59e0b !important;
+        background: rgba(245, 158, 11, 0.05);
+    }
+    .notice-card {
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        border: 1px solid var(--border-color);
+        background: var(--surface);
+        border-radius: 14px;
+    }
+    .notice-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dash-wrapper">
+    <!-- Header banner -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded">Campus Broadcast</span>
+                <span class="text-muted small">Announcements & Circulars</span>
+            </div>
+            <h3 class="mb-0 fw-bold">College Notice Board</h3>
+            <p class="text-muted mb-0 small">Official updates, exam dates, circulars, and departmental announcements.</p>
+        </div>
+        {% if request.user.role != 'student' %}
+        <a class="btn btn-primary-custom d-flex align-items-center gap-2" href="{% url 'academics:notice_create' %}">
+            <i class="bi bi-megaphone-fill"></i>
+            <span>Post New Notice</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Search Bar -->
+    <div class="glass-card p-3 mb-4">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-9">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Search notices by keyword, title or department..." value="{{ q }}">
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary-custom btn-sm w-100">Search</button>
+                {% if q %}
+                <a href="{% url 'academics:notices' %}" class="btn btn-outline-secondary btn-sm" title="Clear">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Pinned Notices Section -->
+    {% if pinned_items %}
+    <div class="mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-pin-angle-fill text-warning fs-5"></i>
+            <h6 class="fw-bold mb-0 text-warning">Pinned Announcements</h6>
+        </div>
+        <div class="row g-3">
+            {% for item in pinned_items %}
+            <div class="col-12">
+                <article class="notice-card pinned-card p-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <div>
+                            <span class="badge bg-warning text-dark fw-bold mb-2">
+                                <i class="bi bi-pin-fill me-1"></i> Pinned
+                            </span>
+                            <h5 class="fw-bold mb-1 text-main">{{ item.title }}</h5>
+                        </div>
+                        {% if request.user.role == 'admin' or item.posted_by == request.user %}
+                        <form method="post" action="{% url 'academics:notice_delete' item.pk %}" class="d-inline" onsubmit="return confirm('Delete this notice?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Notice">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <p class="mb-3" style="white-space: pre-line; line-height: 1.6;">{{ item.body }}</p>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center small text-muted pt-2 border-top">
+                        <div>
+                            <span class="badge bg-light text-dark border me-2">{{ item.department }} · Sem {{ item.semester }}{% if item.section %} ({{ item.section }}){% endif %}</span>
+                            <span>Posted by <strong>{{ item.posted_by.full_name|default:item.posted_by.username }}</strong> · {{ item.created_at|date:'d M Y, H:i' }}</span>
+                        </div>
+                        {% if item.attachment %}
+                        <a href="{{ item.attachment.url }}" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 mt-2 mt-md-0">
+                            <i class="bi bi-paperclip"></i>
+                            <span>View Attachment</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </article>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Other Notices -->
+    <h6 class="fw-bold mb-3 text-muted">Recent Bulletins</h6>
+    <div class="row g-3">
+        {% for item in other_items %}
+        <div class="col-12">
+            <article class="notice-card p-4 shadow-sm">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                    <h5 class="fw-bold mb-1 text-main">{{ item.title }}</h5>
+                    {% if request.user.role == 'admin' or item.posted_by == request.user %}
+                    <form method="post" action="{% url 'academics:notice_delete' item.pk %}" class="d-inline" onsubmit="return confirm('Delete this notice?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Notice">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                <p class="mb-3 text-secondary" style="white-space: pre-line; line-height: 1.6;">{{ item.body }}</p>
+                <div class="d-flex flex-wrap justify-content-between align-items-center small text-muted pt-2 border-top">
+                    <div>
+                        <span class="badge bg-secondary-subtle text-secondary me-2">{{ item.department }} · Sem {{ item.semester }}{% if item.section %} ({{ item.section }}){% endif %}</span>
+                        <span>{{ item.posted_by.full_name|default:item.posted_by.username }} · {{ item.created_at|date:'d M Y, H:i' }}</span>
+                    </div>
+                    {% if item.attachment %}
+                    <a href="{{ item.attachment.url }}" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 mt-2 mt-md-0">
+                        <i class="bi bi-paperclip"></i>
+                        <span>Attachment</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+        {% empty %}
+        {% if not pinned_items %}
+        <div class="col-12">
+            <div class="glass-card p-5 text-center text-muted">
+                <i class="bi bi-bell-slash fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                <h5 class="fw-bold">No Notices Available</h5>
+                <p class="small mb-3">There are no active notices matching your profile or query.</p>
+                {% if request.user.role != 'student' %}
+                <a href="{% url 'academics:notice_create' %}" class="btn btn-sm btn-primary-custom">
+                    Post First Notice
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}

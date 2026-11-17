@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Edit Faculty — {{ profile.user.full_name|default:profile.user.username }}{% endblock %}
+{% block wrapper_class %}{% endblock %}
+
+{% block content %}
+<div class="dash-wrapper" style="max-width:900px;">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'faculty:manage_faculty_page' %}" class="btn btn-outline-secondary rounded-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h3 class="mb-0 fw-bold">Edit Faculty Profile</h3>
+      <span class="badge-role mt-1 d-inline-block">{{ profile.user.college_id }}</span>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Profile Edit Form -->
+    <div class="col-md-7">
+      <div class="glass-card p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-person-gear me-2" style="color:var(--primary);"></i>Profile Details</h5>
+        {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} rounded-3 mb-3">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="profile">
+          {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+              <div class="text-danger small mt-1">{{ error }}</div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary-custom w-100 mt-2">
+            <i class="bi bi-save me-1"></i>Save Profile
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Subject Assignments -->
+    <div class="col-md-5">
+      <div class="glass-card p-4 mb-3">
+        <h5 class="fw-bold mb-3"><i class="bi bi-journal-bookmark me-2" style="color:var(--success);"></i>Subject Assignments</h5>
+
+        {% if assignments %}
+        <ul class="list-group list-group-flush mb-3">
+          {% for sa in assignments %}
+          <li class="list-group-item d-flex align-items-center justify-content-between px-0">
+            <div>
+              <div class="fw-semibold" style="font-size:.9rem;">{{ sa.subject }}</div>
+              <div style="font-size:.75rem;color:var(--text-muted);">{{ sa.subject.department }} · Sem {{ sa.subject.semester }}{% if sa.section %} · {{ sa.section }}{% endif %}</div>
+            </div>
+            <form method="post" class="ms-2">
+              {% csrf_token %}
+              <input type="hidden" name="form_type" value="delete_subject">
+              <input type="hidden" name="sa_id" value="{{ sa.pk }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small mb-3">No subjects assigned yet.</p>
+        {% endif %}
+
+        <!-- Add subject form -->
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="subject">
+          <h6 class="fw-semibold mb-2" style="font-size:.85rem;">Add Subject</h6>
+          {% for field in sa_form %}
+          <div class="mb-2">
+            {{ field }}
+            {% for error in field.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-sm btn-primary-custom w-100 mt-1">
+            <i class="bi bi-plus-lg me-1"></i>Assign Subject
+          </button>
+        </form>
+      </div>
+
+      <!-- Quick Info -->
+      <div class="glass-card p-3">
+        <div class="faculty-meta-row" style="font-size:.82rem;color:var(--text-muted);">
+          <div><i class="bi bi-envelope me-2"></i>{{ profile.user.email|default:'—' }}</div>
+          <div class="mt-1"><i class="bi bi-telephone me-2"></i>{{ profile.user.phone|default:'—' }}</div>
+          <div class="mt-1"><i class="bi bi-calendar me-2"></i>Joined {{ profile.joined_date|date:"d M Y"|default:'—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

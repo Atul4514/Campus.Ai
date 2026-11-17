@@ -6,8 +6,12 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q
+from django.utils import timezone
+from datetime import timedelta
 
-from core.permissions import IsAdmin, IsOwnerOrAdmin, OwnerOrAdminFilterBackend
+from core.permissions import IsAdmin, IsOwnerOrAdmin
+from core.viewsets import OwnerOrAdminQuerysetMixin
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
 from .forms import RegisterForm, LoginForm
 
@@ -32,20 +36,10 @@ def check_college_id(request):
     except CollegeIDAllowlist.DoesNotExist:
         return JsonResponse({'valid': False, 'error': 'not_found'})
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(OwnerOrAdminQuerysetMixin, viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
-    filter_backends = [OwnerOrAdminFilterBackend]
-
-    def get_queryset(self):
-        user = self.request.user
-        if not (user and user.is_authenticated):
-            return User.objects.none()
-        if getattr(user, 'role', None) == 'admin':
-            return User.objects.all()
-        return User.objects.filter(pk=user.pk)
-
     def get_permissions(self):
         if self.action == 'destroy':
             return [IsAdmin()]
@@ -93,6 +87,9 @@ class UserViewSet(viewsets.ModelViewSet):
 # ---------- Template Views (HTML pages) ----------
 
 def register_page(request):
+    # Already logged-in users go straight to dashboard
+    if request.user.is_authenticated:
+        return redirect('dashboard_page')
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
@@ -105,6 +102,9 @@ def register_page(request):
 
 
 def login_page(request):
+    # Already logged-in users go straight to dashboard
+    if request.user.is_authenticated:
+        return redirect('dashboard_page')
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -129,15 +129,36 @@ def dashboard_page(request):
 
     if role == 'admin':
         from .models import CollegeIDAllowlist
-        from django.utils import timezone
-        from datetime import timedelta
 
-        context['total_students'] = User.objects.filter(role='student').count()
-        context['total_faculty'] = User.objects.filter(role='faculty').count()
-        context['pending_allowlist'] = CollegeIDAllowlist.objects.filter(is_used=False).count()
-        context['new_this_week'] = User.objects.filter(
-            created_at__gte=timezone.now() - timedelta(days=7)
-        ).count()
+        # Single aggregated query instead of 4 separate COUNTs
+        user_stats = User.objects.aggregate(
+            total_students=Count('id', filter=Q(role='student')),
+            total_faculty=Count('id', filter=Q(role='faculty')),
+            new_this_week=Count(
+                'id',
+                filter=Q(created_at__gte=timezone.now() - timedelta(days=7))
+            ),
+        )
+        context.update(user_stats)
+        context['pending_allowlist'] = (
+            CollegeIDAllowlist.objects.filter(is_used=False).count()
+        )
+        from academics.models import TimetableEntry
+        from academics.models import Subject
+        from attendance.models import AttendanceSession
+        context['total_classes_scheduled'] = TimetableEntry.objects.count()
+        context['total_subjects'] = Subject.objects.count()
+        context['total_attendance_sessions'] = AttendanceSession.objects.count()
+    elif role == 'student':
+        from core.models import Notification
+        from academics.models import Notice, TimetableEntry
+        from student_management.models import StudentProfile
+        profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+        audience = Q(subject__department__iexact=request.user.department, subject__semester=int(profile.semester or 0)) & (Q(section='') | Q(section__iexact=profile.section))
+        context.update(classes_today=TimetableEntry.objects.filter(audience, day_of_week=timezone.localdate().weekday()).count(), new_notices=Notification.objects.filter(recipient=request.user, is_read=False, notif_type='notice').count(), recent_notices=Notice.objects.filter(department__iexact=request.user.department, semester=int(profile.semester or 0))[:3])
+    elif role == 'faculty':
+        from academics.models import StudyMaterial, TimetableEntry
+        context.update(classes_today=TimetableEntry.objects.filter(faculty=request.user, day_of_week=timezone.localdate().weekday()).count(), notes_uploaded=StudyMaterial.objects.filter(uploaded_by=request.user).count(), students_taught=User.objects.filter(role='student', department=request.user.department).count())
 
     template_map = {
         'student': 'accounts/dashboard_student.html',
@@ -153,20 +174,6 @@ def logout_page(request):
     messages.success(request, 'Logged out successfully.')
     return redirect('login_page')
 
-from django.contrib.auth.views import PasswordResetView
-
 class CustomPasswordResetView(PasswordResetView):
     def form_valid(self, form):
-        print("=" * 50)
-        print("Password Reset Requested")
-        print("Email entered:", form.cleaned_data["email"])
-
-        users = list(form.get_users(form.cleaned_data["email"]))
-        print("Matching users:", users)
-
-        response = super().form_valid(form)
-
-        print("Password reset process completed.")
-        print("=" * 50)
-
-        return response
+        return super().form_valid(form)

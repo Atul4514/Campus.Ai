@@ -1,156 +1,117 @@
 {% extends 'base.html' %}
-{% block title %}Student Dashboard — CampusAI{% endblock %}
+{% block title %}Student Dashboard | CampusAI{% endblock %}
 {% block wrapper_class %}{% endblock %}
+
 {% block content %}
-<style>
-  .dash-page { max-width: 1300px; margin: 0 auto; padding: 2rem 1.25rem; }
-
-  .welcome-banner {
-    background: rgba(255,255,255,0.10);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 24px;
-    padding: 2rem 2.5rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    animation: fadeInDown 0.5s ease both;
-  }
-  .welcome-text h2 { font-size: 1.9rem; font-weight: 800; color: #fff; margin: 0; }
-  .welcome-text p  { color: rgba(255,255,255,0.7); margin: 0.3rem 0 0; font-size: 0.9rem; }
-
-  .action-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-  .action-btn {
-    display: flex; align-items: center; gap: 0.65rem;
-    padding: 0.7rem 1.3rem; border-radius: 14px;
-    font-size: 0.875rem; font-weight: 700;
-    text-decoration: none; border: none; cursor: pointer;
-    position: relative; overflow: hidden; letter-spacing: 0.2px;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease, filter 0.22s ease;
-  }
-  .action-btn::before { content:''; position:absolute;inset:0;background:rgba(255,255,255,0.15);opacity:0;transition:opacity 0.2s ease; }
-  .action-btn:hover::before { opacity:1; }
-  .action-btn:hover { transform: translateY(-4px) scale(1.04); filter: brightness(1.08); }
-  .action-btn:active { transform: translateY(-1px) scale(0.98); }
-  .action-btn .btn-icon {
-    width: 32px; height: 32px; border-radius: 9px;
-    background: rgba(255,255,255,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; flex-shrink: 0;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .action-btn:hover .btn-icon { transform: rotate(-8deg) scale(1.15); }
-  .action-btn.ab-green { background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,0.35); }
-  .action-btn.ab-rose  { background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff;box-shadow:0 4px 16px rgba(244,63,94,0.3); }
-  .action-btn:hover.ab-green { box-shadow:0 10px 28px rgba(34,197,94,0.5); }
-  .action-btn:hover.ab-rose  { box-shadow:0 10px 28px rgba(244,63,94,0.5); }
-
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-  .s-card {
-    background: var(--surface); backdrop-filter:blur(20px);
-    border: 1px solid var(--border-soft); border-radius: 20px; padding: 1.5rem;
-    display: flex; align-items: center; gap: 1rem;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
-    animation: fadeInUp 0.5s ease both; cursor: default;
-  }
-  .s-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 16px 36px rgba(0,0,0,0.22); }
-  .s-icon {
-    width: 56px; height: 56px; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem; color: #fff; flex-shrink: 0;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .s-card:hover .s-icon { transform: scale(1.18) rotate(-6deg); }
-  .s-value { font-size: 2rem; font-weight: 800; color: var(--text-main); line-height: 1; }
-  .s-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.4px; }
-
-  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
-  .info-card {
-    background: var(--surface); backdrop-filter:blur(20px);
-    border: 1px solid var(--border-soft); border-radius: 20px; padding: 1.75rem;
-    animation: fadeInUp 0.5s ease 0.1s both;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
-  }
-  .info-card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(0,0,0,0.18); }
-  .info-card h5 { font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.75rem; }
-
-  @keyframes fadeInDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes fadeInUp   { from{opacity:0;transform:translateY(16px)}  to{opacity:1;transform:translateY(0)} }
-</style>
-
-<div class="dash-page">
-  <!-- Welcome Banner -->
-  <div class="welcome-banner">
-    <div class="welcome-text">
-      <h2>Welcome, {{ user.full_name|default:user.username }} 👋</h2>
-      <p>Your academic hub — profile, timetable and more.</p>
+<main class="dash-wrapper">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="mb-0 fw-bold">Welcome, {{ user.full_name|default:user.username }}</h3>
+            <span class="badge-role mt-1 d-inline-block">STUDENT</span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'student_management:my_profile' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-person me-1"></i> My Profile
+            </a>
+            <a href="{% url 'logout_page' %}" class="btn btn-outline-danger">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
+        </div>
     </div>
-    <div class="action-grid">
-      <a href="{% url 'student_management:my_profile' %}" class="action-btn ab-green" id="btn-my-profile">
-        <span class="btn-icon"><i class="bi bi-person-lines-fill"></i></span>
-        My Profile
-      </a>
-      <a href="{% url 'logout_page' %}" class="action-btn ab-rose" id="btn-logout">
-        <span class="btn-icon"><i class="bi bi-box-arrow-right"></i></span>
-        Logout
-      </a>
-    </div>
-  </div>
 
-  <!-- Stats -->
-  <div class="stat-grid">
-    <div class="s-card" style="animation-delay:0ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">
-        <i class="bi bi-check2-circle"></i>
-      </div>
-      <div>
-        <div class="s-value">—%</div>
-        <div class="s-label">Attendance</div>
-      </div>
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="small text-muted">Classes Today</div>
+                <h3 class="fw-bold mb-0">{{ classes_today }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="small text-muted">My Attendance</div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <a href="{% url 'attendance:student_attendance' %}" class="text-decoration-none">
+                        <span class="badge bg-success-subtle text-success fs-6 fw-bold">View Portal <i class="bi bi-arrow-right"></i></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="small text-muted">New Notices</div>
+                <h3 class="fw-bold mb-0">{{ new_notices }}</h3>
+            </div>
+        </div>
     </div>
-    <div class="s-card" style="animation-delay:80ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#6366f1,#4338ca);">
-        <i class="bi bi-calendar-week"></i>
-      </div>
-      <div>
-        <div class="s-value">—</div>
-        <div class="s-label">Classes Today</div>
-      </div>
-    </div>
-    <div class="s-card" style="animation-delay:160ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
-        <i class="bi bi-bell"></i>
-      </div>
-      <div>
-        <div class="s-value">—</div>
-        <div class="s-label">New Notices</div>
-      </div>
-    </div>
-    <div class="s-card" style="animation-delay:240ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">
-        <i class="bi bi-robot"></i>
-      </div>
-      <div>
-        <div class="s-value">Chat →</div>
-        <div class="s-label">Ask CampusAI</div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Info Cards -->
-  <div class="info-grid">
-    <div class="info-card">
-      <h5><i class="bi bi-calendar3 me-2" style="color:var(--primary);"></i>Today's Timetable</h5>
-      <p class="text-muted mb-0" style="font-size:0.875rem;">Timetable module coming soon — your class schedule will appear here.</p>
+    <!-- Cards Grid -->
+    <div class="row g-3">
+        <!-- Attendance & Timetable -->
+        <div class="col-md-4">
+            <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="stat-icon bg-success mb-3 shadow-sm">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <h5 class="fw-bold">My Attendance</h5>
+                    <p class="text-muted small">Monitor your subject-wise presence, attendance percentages, and check exam eligibility status.</p>
+                </div>
+                <div class="pt-2 border-top">
+                    <a href="{% url 'attendance:student_attendance' %}" class="btn btn-sm btn-primary-custom w-100">
+                        Check Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic Resources -->
+        <div class="col-md-4">
+            <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="stat-icon bg-primary mb-3 shadow-sm">
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                    </div>
+                    <h5 class="fw-bold">Class & Notes</h5>
+                    <p class="text-muted small">Access your weekly lecture routine, classroom locations, and download study notes uploaded by faculty.</p>
+                </div>
+                <div class="d-flex gap-2 pt-2 border-top">
+                    <a class="btn btn-sm btn-outline-primary flex-fill" href="{% url 'academics:timetable' %}">
+                        <i class="bi bi-calendar3 me-1"></i> Timetable
+                    </a>
+                    <a class="btn btn-sm btn-primary-custom flex-fill" href="{% url 'academics:materials' %}">
+                        <i class="bi bi-download me-1"></i> Notes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Notices -->
+        <div class="col-md-4">
+            <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="stat-icon bg-warning text-dark mb-3 shadow-sm">
+                        <i class="bi bi-megaphone-fill"></i>
+                    </div>
+                    <h5 class="fw-bold">Circulars & Notices</h5>
+                    <div class="mb-3">
+                        {% for notice in recent_notices %}
+                        <div class="border-bottom py-1 small">
+                            <strong class="d-block text-truncate">{{ notice.title }}</strong>
+                            <span class="text-muted" style="font-size: 0.75rem;">{{ notice.created_at|date:'d M Y' }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small mb-0">No new notices for your semester.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="pt-2 border-top">
+                    <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'academics:notices' %}">
+                        View All Notices
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="info-card">
-      <h5><i class="bi bi-megaphone me-2" style="color:#f59e0b;"></i>Recent Notices</h5>
-      <p class="text-muted mb-0" style="font-size:0.875rem;">Notice board coming soon — faculty/admin notices will appear here.</p>
-    </div>
-  </div>
-</div>
+</main>
 {% endblock %}

@@ -1,4 +1,5 @@
 import os
+from importlib.util import find_spec
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -21,6 +22,7 @@ def _as_bool(value):
 
 
 DEBUG = config('DEBUG', default=False, cast=_as_bool)
+HAS_WHITENOISE = find_spec('whitenoise') is not None
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
@@ -41,25 +43,30 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # project apps
     'rest_framework',
     'corsheaders',
     'accounts',
     'core',
     'role_access',
     'student_management',
+    'faculty',
+    'academics',
+    'attendance',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if HAS_WHITENOISE:
+    MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'collegemgmt.urls'
 AUTH_USER_MODEL = 'accounts.User'
@@ -71,10 +78,11 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
+                    'django.template.context_processors.request',
+                    'django.contrib.auth.context_processors.auth',
+                    'django.contrib.messages.context_processors.messages',
+                    'core.context_processors.notifications',
+                ],
         },
     },
 ]
@@ -109,8 +117,33 @@ DATABASES = {
     else {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        # Keep connection alive for 60 s so each view doesn't re-open the file
+        'CONN_MAX_AGE': 60,
+        'OPTIONS': {
+            # WAL mode: readers don't block writers, writers don't block readers
+            'init_command': 'PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL; PRAGMA temp_store=MEMORY; PRAGMA mmap_size=134217728;',
+        },
     }
 }
+
+# ---------------------------------------------------------------------------
+# Caching — LocMemCache is zero-dependency and gives us session + view caching
+# ---------------------------------------------------------------------------
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'campusai-cache',
+        'TIMEOUT': 300,  # 5 minutes default TTL
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        },
+    }
+}
+
+# Use cached DB sessions — session data is served from memory, DB only on miss
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_COOKIE_AGE = 86400  # 24 hours
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -126,13 +159,15 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / '.vercel' / 'output' / 'static'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path('/tmp/media') if os.environ.get('VERCEL') else BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Vercel can serve Django admin assets directly from the bundled finders.
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_AUTOREFRESH = DEBUG
+if HAS_WHITENOISE:
+    # Vercel can serve Django admin assets directly from the bundled finders.
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = DEBUG
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -155,3 +190,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='')
+
+# Standard login and redirect configuration
+LOGIN_URL = 'login_page'
+LOGIN_REDIRECT_URL = 'dashboard_page'
+LOGOUT_REDIRECT_URL = 'login_page'

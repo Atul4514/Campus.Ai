@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% block title %}Class Timetable | CampusAI{% endblock %}
+{% block wrapper_class %}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .day-column {
+        min-width: 210px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    .day-column.today-col {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+    }
+    .day-header {
+        background: rgba(0, 0, 0, 0.02);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem 1rem;
+    }
+    .day-column.today-col .day-header {
+        background: var(--primary);
+        color: #ffffff;
+    }
+    .slot-card {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.85rem;
+        margin-bottom: 0.75rem;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        position: relative;
+    }
+    .slot-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ── Student Filter Panel ─────────────────────────── */
+    .filter-panel {
+        background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.06) 100%);
+        border: 1px solid rgba(99,102,241,0.2);
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+    }
+    .filter-panel .filter-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--primary);
+        margin-bottom: 0.35rem;
+    }
+    .filter-panel select {
+        border-radius: 10px;
+        border: 1px solid rgba(99,102,241,0.3);
+        background: var(--surface);
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        transition: border-color 0.15s;
+    }
+    .filter-panel select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        outline: none;
+    }
+    .btn-filter {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.52rem 1.3rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: opacity 0.15s, transform 0.15s;
+        cursor: pointer;
+    }
+    .btn-filter:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-reset {
+        background: transparent;
+        color: var(--text-muted, #6b7280);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.52rem 1rem;
+        font-size: 0.9rem;
+        transition: background 0.15s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .btn-reset:hover { background: rgba(0,0,0,0.04); }
+
+    /* ── Subjects for Semester ─────────────────────────── */
+    .subject-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.85rem;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 50px;
+        font-size: 0.83rem;
+        font-weight: 500;
+        color: var(--text-main, #1e293b);
+        transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .subject-chip:hover {
+        background: rgba(99,102,241,0.07);
+        border-color: rgba(99,102,241,0.35);
+        transform: translateY(-1px);
+    }
+    .chip-icon {
+        width: 22px; height: 22px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 0.65rem;
+        flex-shrink: 0;
+    }
+    .profile-nudge {
+        background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.06));
+        border: 1px solid rgba(245,158,11,0.3);
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dash-wrapper">
+    <!-- Header banner -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded">Class Calendar</span>
+                <span class="text-muted small">Semester Routine</span>
+            </div>
+            <h3 class="mb-0 fw-bold">Academic Timetable</h3>
+            <p class="text-muted mb-0 small">Weekly schedule of lectures, lab sessions, and classroom allocations.</p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if request.user.role != 'student' %}
+            <a class="btn btn-primary-custom d-flex align-items-center gap-2" href="{% url 'academics:timetable_create' %}">
+                <i class="bi bi-calendar-plus-fill"></i>
+                <span>Schedule New Class</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if request.user.role == 'student' %}
+
+    {% if not student_profile.semester or not request.user.department %}
+    <div class="profile-nudge d-flex align-items-start gap-3 mb-4">
+        <div class="flex-shrink-0 mt-1">
+            <span class="badge bg-warning-subtle text-warning p-2 rounded-circle" style="font-size:1.1rem;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </span>
+        </div>
+        <div>
+            <div class="fw-semibold mb-1">Complete your profile to auto-load your timetable</div>
+            <p class="text-muted small mb-0">
+                Your profile is missing department or semester info. Use the filter below to browse,
+                or <a href="{% url 'student_management:my_profile' %}" class="text-primary fw-semibold">update your profile</a> to make it permanent.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Student Filter Panel ── -->
+    <div class="filter-panel mb-4">
+        <form method="get" action="" id="timetable-filter-form">
+            <div class="d-flex flex-wrap align-items-end gap-3">
+                <div>
+                    <div class="filter-label"><i class="bi bi-building me-1"></i>Department</div>
+                    <select name="department" id="filter-department" class="form-select" style="min-width:200px;">
+                        <option value="">-- Select Department --</option>
+                        {% for dept in dept_choices %}
+                        <option value="{{ dept }}" {% if dept|lower == filter_department|lower %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <div class="filter-label"><i class="bi bi-layers me-1"></i>Semester</div>
+                    <select name="semester" id="filter-semester" class="form-select" style="min-width:160px;">
+                        <option value="">-- Select Semester --</option>
+                        {% for sem in semester_choices %}
+                        <option value="{{ sem }}" {% if sem|stringformat:"s" == filter_semester %}selected{% endif %}>Semester {{ sem }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-flex gap-2 align-self-end">
+                    <button type="submit" class="btn-filter">
+                        <i class="bi bi-search"></i> Show Timetable
+                    </button>
+                    <a href="{% url 'academics:timetable' %}" class="btn-reset">
+                        <i class="bi bi-x-lg"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        {% if filter_department and filter_semester %}
+        <div class="mt-2 pt-2 d-flex align-items-center gap-2 flex-wrap" style="border-top: 1px solid rgba(99,102,241,0.15);">
+            <span class="text-muted small">Showing timetable for:</span>
+            <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded">{{ filter_department }}</span>
+            <span class="badge fw-semibold px-2 py-1 rounded" style="background:var(--accent-light);color:var(--accent);">Semester {{ filter_semester }}</span>
+            <span class="ms-auto text-muted small">{{ entries|length }} class slot{{ entries|length|pluralize }} found</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ── Subjects for This Semester ── -->
+    {% if subjects %}
+    <div class="glass-card p-4 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge bg-success-subtle text-success p-2 rounded-circle" style="font-size:1rem;"><i class="bi bi-book-fill"></i></span>
+            <div>
+                <h6 class="mb-0 fw-bold">
+                    Subjects —
+                    {% if filter_department %}{{ filter_department }}{% else %}{{ request.user.department }}{% endif %},
+                    Semester {% if filter_semester %}{{ filter_semester }}{% else %}{{ student_profile.semester }}{% endif %}
+                </h6>
+                <span class="text-muted small">{{ subjects|length }} subject{{ subjects|length|pluralize }} assigned to this semester</span>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            {% for subject in subjects %}
+            <span class="subject-chip">
+                <span class="chip-icon"><i class="bi bi-journal-text"></i></span>
+                {{ subject.name }}
+            </span>
+            {% empty %}
+            <span class="text-muted small fst-italic">No subjects found for this semester yet.</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+
+    <!-- Weekly 6-Day Schedule Grid -->
+    <div class="row g-3 mb-4">
+        {% for day_idx, day_name in days_of_week %}
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="day-column {% if day_idx == today %}today-col{% endif %} h-100 d-flex flex-column">
+                <div class="day-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">{{ day_name }}</span>
+                    {% if day_idx == today %}
+                    <span class="badge bg-white text-primary fw-bold" style="font-size: 0.7rem;">TODAY</span>
+                    {% endif %}
+                </div>
+                <div class="p-2 flex-grow-1" style="min-height: 200px;">
+                    {% for entry in entries %}
+                        {% if entry.day_of_week == day_idx %}
+                        <div class="slot-card">
+                            <div class="d-flex justify-content-between align-items-start gap-1 mb-1">
+                                <span class="badge bg-primary-subtle text-primary fw-semibold small">
+                                    {{ entry.start_time|time:'H:i' }}–{{ entry.end_time|time:'H:i' }}
+                                </span>
+                                {% if request.user.role == 'admin' or entry.faculty == request.user %}
+                                <form method="post" action="{% url 'academics:timetable_delete' entry.pk %}" class="d-inline" onsubmit="return confirm('Remove this class slot?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Remove Slot" style="font-size: 0.8rem; line-height: 1;">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+
+                            <div class="fw-bold text-main mb-1" style="font-size: 0.95rem;">{{ entry.subject }}</div>
+
+                            <div class="small text-muted mb-1">
+                                <i class="bi bi-person-fill me-1"></i>{{ entry.faculty.full_name|default:entry.faculty.username }}
+                            </div>
+
+                            {% if entry.room %}
+                            <div class="small text-muted mb-1">
+                                <i class="bi bi-geo-alt-fill me-1 text-primary"></i>Room: {{ entry.room }}
+                            </div>
+                            {% endif %}
+
+                            <div class="badge bg-light text-muted border" style="font-size: 0.7rem;">
+                                {{ entry.subject.department }} · S{{ entry.subject.semester }}{% if entry.section %} ({{ entry.section }}){% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Complete Table View for Reference / Printing -->
+    <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Detailed Class Schedule List</h5>
+            <span class="text-muted small">{{ entries|length }} total weekly slots</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Day</th>
+                        <th>Timing</th>
+                        <th>Subject</th>
+                        <th>Faculty</th>
+                        <th>Room</th>
+                        <th>Target Class</th>
+                        {% if request.user.role != 'student' %}<th class="text-end">Actions</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in entries %}
+                    <tr {% if item.day_of_week == today %}class="table-primary"{% endif %}>
+                        <td class="fw-semibold">
+                            {{ item.get_day_of_week_display }}
+                            {% if item.day_of_week == today %}
+                            <span class="badge bg-primary ms-1 small">Today</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ item.start_time|time:'H:i' }} – {{ item.end_time|time:'H:i' }}</code></td>
+                        <td class="fw-bold text-primary">{{ item.subject }}</td>
+                        <td>{{ item.faculty.full_name|default:item.faculty.username }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ item.room|default:'TBD' }}</span></td>
+                        <td>{{ item.subject.department }} · Sem {{ item.subject.semester }}{% if item.section %} ({{ item.section }}){% endif %}</td>
+                        {% if request.user.role != 'student' %}
+                        <td class="text-end">
+                            {% if request.user.role == 'admin' or item.faculty == request.user %}
+                            <form method="post" action="{% url 'academics:timetable_delete' item.pk %}" class="d-inline" onsubmit="return confirm('Remove this timetable entry?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-x fs-2 d-block mb-2 opacity-50"></i>
+                            {% if request.user.role == 'student' and not filter_department %}
+                                Select a department and semester above to view the timetable.
+                            {% else %}
+                                No classes scheduled yet.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{% endblock %}
+

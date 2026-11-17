@@ -47,3 +47,28 @@ class RoleAccessManagementTests(TestCase):
         self.client.force_login(self.student)
         response = self.client.get(reverse('role_access:manage_roles'))
         self.assertEqual(response.status_code, 302)
+
+    def test_faculty_dashboard_renders(self):
+        faculty = get_user_model().objects.create_user(
+            username='facultyuser',
+            password='testpass123',
+            college_id='FAC001',
+            role='faculty',
+            full_name='Faculty User',
+        )
+        self.client.force_login(faculty)
+        response = self.client.get(reverse('dashboard_page'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Faculty Dashboard')
+
+    def test_student_dashboard_renders(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('dashboard_page'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Student Dashboard')
+
+    def test_admin_dashboard_renders(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('dashboard_page'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Admin Dashboard')

@@ -1,33 +1,11 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import CollegeIDAllowlist
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+
+from .models import CollegeIDAllowlist
 
 User = get_user_model()
 
-from django.contrib.auth.forms import PasswordResetForm
-
-class RegisterForm(forms.ModelForm):
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}),
-        min_length=8
-    )
-    confirm_password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm Password'})
-    )
-
-    class Meta:
-        model = User
-        fields = ['full_name', 'username', 'email', 'college_id', 'department', 'phone']
-        widgets = {
-            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Display Name'}),
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}),
-            'college_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'College ID'}),
-            'department': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Department'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone'}),
-        }
-    # ... rest stays the same (clean_college_id, clean, save methods unchanged)
 
 class StyledPasswordResetForm(PasswordResetForm):
     email = forms.EmailField(
@@ -36,10 +14,6 @@ class StyledPasswordResetForm(PasswordResetForm):
             'placeholder': 'Email'
         })
     )
-
-    def send_mail(self, *args, **kwargs):
-        print("Password reset email is being sent...")
-        return super().send_mail(*args, **kwargs)
 
 
 class StyledSetPasswordForm(SetPasswordForm):
@@ -51,7 +25,6 @@ class StyledSetPasswordForm(SetPasswordForm):
     )
 
 
-
 class RegisterForm(forms.ModelForm):
     YEAR_CHOICES = [
         ('', 'Select Year'),
@@ -60,7 +33,7 @@ class RegisterForm(forms.ModelForm):
         ('Third Year', 'Third Year'),
         ('Fourth Year', 'Fourth Year'),
     ]
-    
+
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}),
         min_length=8

@@ -1,612 +1,353 @@
 {% extends 'base.html' %}
-{% block title %}{% if is_own_profile %}My Profile{% else %}Student Profile{% endif %} — CampusAI{% endblock %}
+{% block title %}{% if is_own_profile %}My Profile{% else %}Student Profile{% endif %}{% endblock %}
 {% block wrapper_class %}{% endblock %}
-{% block content %}
+
+{% block extra_styles %}
 <style>
-  /* ── Page ── */
-  .sp-page { max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem; }
+    .profile-upload-box {
+        border: 2px dashed var(--primary);
+        border-radius: 16px;
+        padding: 1rem;
+        background: rgba(99, 102, 241, 0.05);
+        text-align: center;
+    }
+    .profile-upload-box input[type="file"] {
+        display: block;
+        margin: 0.5rem auto 0;
+    }
+    .profile-preview {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid var(--primary);
+        box-shadow: var(--card-shadow);
+    }
+    .section-title {
+        color: var(--text-main);
+        font-weight: 700;
+        margin-bottom: 0.8rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.4rem;
+    }
 
-  /* ── Header ── */
-  .sp-header { margin-bottom: 2rem; }
-  .sp-header h2 { font-size: 1.75rem; font-weight: 800; color: #fff; margin: 0; }
-  .sp-header p { color: rgba(255,255,255,0.65); margin: 0.25rem 0 0; font-size: 0.875rem; }
-
-  /* ── Layout Grid ── */
-  .sp-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start; }
-  @media (max-width: 900px) { .sp-layout { grid-template-columns: 1fr; } }
-
-  /* ── Sidebar Card ── */
-  .sp-sidebar {
-    background: var(--surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    overflow: hidden;
-    animation: fadeInUp 0.4s ease;
-  }
-  .sp-sidebar-banner {
-    height: 90px;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    position: relative;
-  }
-  .sp-sidebar-body { padding: 0 1.5rem 1.5rem; }
-  .sp-avatar-wrap {
-    display: flex; justify-content: center;
-    margin-top: -50px; margin-bottom: 0.75rem;
-    position: relative;
-  }
-  .sp-avatar {
-    width: 100px; height: 100px;
-    border-radius: 50%;
-    border: 4px solid var(--surface-solid);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    background: #374151;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2.5rem; color: #f9fafb;
-    overflow: hidden;
-  }
-  .sp-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .sp-name { font-size: 1.1rem; font-weight: 800; color: var(--text-main); text-align: center; margin: 0; }
-  .sp-username { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: 0.2rem 0 0; }
-
-  .sp-info-list { margin: 1.2rem 0 0; }
-  .sp-info-item {
-    display: flex; align-items: center; gap: 0.75rem;
-    padding: 0.65rem 0;
-    border-bottom: 1px solid var(--border-soft);
-    font-size: 0.85rem;
-    color: var(--text-main);
-  }
-  .sp-info-item:last-child { border-bottom: none; }
-  .sp-info-icon {
-    width: 32px; height: 32px;
-    border-radius: 9px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-  .sp-info-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1; }
-  .sp-info-value { font-weight: 600; line-height: 1.3; }
-
-  /* ── Completion Ring ── */
-  .sp-completion { text-align: center; margin: 1.4rem 0 0.5rem; }
-  .sp-ring-wrap { position: relative; display: inline-block; }
-  .sp-ring-label {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    font-size: 1.3rem; font-weight: 800; color: var(--text-main);
-  }
-  .sp-completion-title { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
-
-  /* ── Main Panel ── */
-  .sp-panel {
-    background: var(--surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    overflow: hidden;
-    animation: fadeInUp 0.4s ease 0.1s both;
-  }
-
-  /* ── Admin Banner ── */
-  .sp-admin-banner {
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
-    color: #fff;
-    padding: 0.75rem 1.5rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: flex; align-items: center; gap: 0.5rem;
-  }
-
-  /* ── Tabs ── */
-  .sp-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border-soft);
-    padding: 0 1.5rem;
-    gap: 0;
-    overflow-x: auto;
-  }
-  .sp-tab {
-    padding: 1rem 1.25rem;
-    font-size: 0.875rem; font-weight: 600;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-    background: none; border-left: none; border-right: none; border-top: none;
-    outline: none;
-  }
-  .sp-tab:hover { color: var(--primary); }
-  .sp-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
-  .sp-tab i { margin-right: 0.4rem; }
-
-  /* ── Tab Content ── */
-  .sp-tab-content { padding: 1.75rem 1.5rem; }
-  .sp-tab-pane { display: none; animation: fadeInUp 0.3s ease; }
-  .sp-tab-pane.active { display: block; }
-
-  /* ── Form Sections ── */
-  .sp-section-title {
-    font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.8px; color: var(--text-muted);
-    margin: 0 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-soft);
-  }
-  .form-label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
-
-  /* ── Photo Upload ── */
-  .sp-photo-upload {
-    border: 2px dashed rgba(99,102,241,0.4);
-    border-radius: 14px;
-    padding: 1.25rem;
-    text-align: center;
-    background: rgba(99,102,241,0.05);
-    margin-bottom: 1.5rem;
-    transition: border-color 0.2s ease, background 0.2s ease;
-  }
-  .sp-photo-upload:hover { border-color: var(--primary); background: rgba(99,102,241,0.08); }
-  .sp-photo-preview {
-    width: 90px; height: 90px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--primary);
-    margin: 0 auto 0.75rem;
-    display: block;
-  }
-  .sp-photo-placeholder {
-    width: 90px; height: 90px;
-    border-radius: 50%;
-    background: #374151;
-    color: #9ca3af;
-    font-size: 2rem;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 0.75rem;
-  }
-  .sp-photo-hint { font-size: 0.78rem; color: var(--text-muted); }
-
-  /* ── Save Button ── */
-  .sp-save-btn {
-    position: relative; overflow: hidden;
-    transition: all 0.2s ease;
-  }
-  .sp-save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
-  .sp-save-btn:active { transform: scale(0.97); }
-
-  /* ── Read-only View ── */
-  .sp-readonly-value {
-    background: rgba(0,0,0,0.05);
-    border: 1px solid var(--border-soft);
-    border-radius: 10px;
-    padding: 0.7rem 1rem;
-    font-size: 0.875rem;
-    color: var(--text-main);
-    min-height: 42px;
-  }
-  [data-theme="dark"] .sp-readonly-value { background: rgba(255,255,255,0.06); }
-
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+    /* ── Subject Chips ─────────────────────── */
+    .subject-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 50px;
+        font-size: 0.84rem;
+        font-weight: 500;
+        transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .subject-chip:hover {
+        background: rgba(99,102,241,0.07);
+        border-color: rgba(99,102,241,0.35);
+        transform: translateY(-1px);
+    }
+    .chip-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        flex-shrink: 0;
+    }
+    .subjects-card {
+        background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.04) 100%);
+        border: 1px solid rgba(99,102,241,0.18);
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+    .subjects-empty {
+        background: linear-gradient(135deg, rgba(245,158,11,0.07), rgba(239,68,68,0.05));
+        border: 1px dashed rgba(245,158,11,0.4);
+        border-radius: 14px;
+        padding: 1.25rem;
+    }
+    .allot-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #059669;
+        background: rgba(5,150,105,0.1);
+        border: 1px solid rgba(5,150,105,0.25);
+        border-radius: 20px;
+        padding: 0.25rem 0.65rem;
+    }
 </style>
+{% endblock %}
 
-<div class="sp-page">
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-start sp-header flex-wrap gap-2">
-    <div>
-      <h2>
-        <i class="bi bi-person-circle me-2"></i>
-        {% if is_own_profile %}My Academic Profile{% else %}{{ student.full_name|default:student.username }}'s Profile{% endif %}
-      </h2>
-      <p>{% if is_own_profile %}View and update your personal and academic information{% else %}Viewing student profile — Admin Oversight{% endif %}</p>
+{% block content %}
+<div class="dash-wrapper">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="mb-0 fw-bold">{% if is_own_profile %}My Academic Profile{% else %}Student Academic Profile{% endif %}</h3>
+            <span class="badge-role mt-1 d-inline-block">{% if is_own_profile %}SELF SERVICE{% else %}ADMIN OVERSIGHT{% endif %}</span>
+        </div>
+        <a href="{% if is_own_profile %}{% url 'dashboard_page' %}{% else %}{% url 'student_management:manage_students' %}{% endif %}" class="btn btn-outline-secondary rounded-3">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
     </div>
-    <a href="{% if is_own_profile %}{% url 'dashboard_page' %}{% else %}{% url 'student_management:manage_students' %}{% endif %}"
-       class="btn btn-outline-light rounded-3">
-      <i class="bi bi-arrow-left me-1"></i> Back
-    </a>
-  </div>
 
-  <div class="sp-layout">
-    <!-- ── Sidebar ── -->
-    <aside class="sp-sidebar">
-      <div class="sp-sidebar-banner"></div>
-      <div class="sp-sidebar-body">
-        <!-- Avatar -->
-        <div class="sp-avatar-wrap">
-          <div class="sp-avatar" id="sidebarAvatarWrap">
-            {% if profile.profile_photo %}
-              <img src="{{ profile.profile_photo.url }}" alt="Profile" id="sidebarAvatarImg">
-            {% else %}
-              <i class="bi bi-person-fill" id="sidebarAvatarIcon"></i>
-            {% endif %}
-          </div>
-        </div>
+    <div class="glass-card p-4 mb-4">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="stat-card text-center h-100 p-4">
+                    <div class="d-flex justify-content-center mb-3">
+                        {% if profile.profile_photo %}
+                            <img src="{{ profile.profile_photo.url }}" alt="Profile photo" class="profile-preview">
+                        {% else %}
+                            <div class="profile-preview d-flex align-items-center justify-content-center bg-secondary text-white mx-auto" style="font-size: 2.5rem;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <h5 class="fw-bold mb-2">{{ student.full_name|default:student.username }}</h5>
+                    <p class="mb-1 text-muted small"><strong>Username:</strong> {{ student.username }}</p>
+                    <p class="mb-1 text-muted small"><strong>College ID:</strong> {{ student.college_id }}</p>
+                    <p class="mb-0 text-muted small"><strong>Department:</strong> {{ student.department|default:'-' }}</p>
 
-        <h5 class="sp-name">{{ student.full_name|default:student.username }}</h5>
-        <p class="sp-username">@{{ student.username }}</p>
-
-        <!-- Completion Ring -->
-        <div class="sp-completion">
-          <div class="sp-ring-wrap">
-            <svg width="110" height="110" viewBox="0 0 110 110">
-              <!-- Track ring -->
-              <circle cx="55" cy="55" r="46" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="10"/>
-              <!-- Progress ring: circumference = 2*π*46 ≈ 289 -->
-              <circle cx="55" cy="55" r="46" fill="none"
-                stroke="{% if profile.profile_completion >= 80 %}#22c55e{% elif profile.profile_completion >= 50 %}#f59e0b{% else %}#ef4444{% endif %}"
-                stroke-width="10"
-                stroke-dasharray="{% widthratio profile.profile_completion 100 289 %} 289"
-                stroke-linecap="round"
-                style="transform: rotate(-90deg); transform-origin: center; transition: stroke-dasharray 0.8s ease;"/>
-            </svg>
-            <div class="sp-ring-label">{{ profile.profile_completion }}%</div>
-          </div>
-          <div class="sp-completion-title">Profile Complete</div>
-        </div>
-
-        <!-- Info list -->
-        <div class="sp-info-list">
-          <div class="sp-info-item">
-            <div class="sp-info-icon" style="background:rgba(99,102,241,0.12);color:var(--primary);">
-              <i class="bi bi-card-heading"></i>
-            </div>
-            <div>
-              <div class="sp-info-label">College ID</div>
-              <div class="sp-info-value">{{ student.college_id|default:'—' }}</div>
-            </div>
-          </div>
-          <div class="sp-info-item">
-            <div class="sp-info-icon" style="background:rgba(6,182,212,0.1);color:#0891b2;">
-              <i class="bi bi-building"></i>
-            </div>
-            <div>
-              <div class="sp-info-label">Department</div>
-              <div class="sp-info-value">{{ student.department|default:'—' }}</div>
-            </div>
-          </div>
-          {% if profile.course %}
-          <div class="sp-info-item">
-            <div class="sp-info-icon" style="background:rgba(245,158,11,0.1);color:#b45309;">
-              <i class="bi bi-book"></i>
-            </div>
-            <div>
-              <div class="sp-info-label">Course</div>
-              <div class="sp-info-value">{{ profile.course }}</div>
-            </div>
-          </div>
-          {% endif %}
-          {% if profile.phone_number %}
-          <div class="sp-info-item">
-            <div class="sp-info-icon" style="background:rgba(34,197,94,0.1);color:#16a34a;">
-              <i class="bi bi-telephone"></i>
-            </div>
-            <div>
-              <div class="sp-info-label">Phone</div>
-              <div class="sp-info-value">{{ profile.phone_number }}</div>
-            </div>
-          </div>
-          {% endif %}
-          <div class="sp-info-item">
-            <div class="sp-info-icon" style="background:rgba(236,72,153,0.1);color:#db2777;">
-              <i class="bi bi-envelope"></i>
-            </div>
-            <div>
-              <div class="sp-info-label">Email</div>
-              <div class="sp-info-value" style="word-break:break-all;">{{ student.email|default:'—' }}</div>
-            </div>
-          </div>
-          {% if profile.blood_group %}
-          <div class="sp-info-item">
-            <div class="sp-info-icon" style="background:rgba(239,68,68,0.1);color:#dc2626;">
-              <i class="bi bi-droplet-half"></i>
-            </div>
-            <div>
-              <div class="sp-info-label">Blood Group</div>
-              <div class="sp-info-value">{{ profile.blood_group }}</div>
-            </div>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </aside>
-
-    <!-- ── Main Panel ── -->
-    <div class="sp-panel">
-      {% if not is_own_profile %}
-      <div class="sp-admin-banner">
-        <i class="bi bi-shield-check"></i>
-        Editing as Admin — changes are saved directly to the student's profile
-      </div>
-      {% endif %}
-
-      <!-- Tabs -->
-      <div class="sp-tabs" role="tablist">
-        <button class="sp-tab active" data-tab="personal" role="tab">
-          <i class="bi bi-person"></i> Personal
-        </button>
-        <button class="sp-tab" data-tab="academic" role="tab">
-          <i class="bi bi-mortarboard"></i> Academic
-        </button>
-        <button class="sp-tab" data-tab="guardian" role="tab">
-          <i class="bi bi-people"></i> Guardian
-        </button>
-        {% if can_edit and is_own_profile %}
-        <button class="sp-tab" data-tab="photo" role="tab">
-          <i class="bi bi-camera"></i> Photo
-        </button>
-        {% endif %}
-      </div>
-
-      <!-- Tab Content -->
-      <div class="sp-tab-content">
-        {% if can_edit %}
-        <form method="post" enctype="multipart/form-data" novalidate id="profileForm">
-          {% csrf_token %}
-        {% endif %}
-
-          <!-- ── Personal Tab ── -->
-          <div class="sp-tab-pane active" id="tab-personal">
-            <p class="sp-section-title">Personal Information</p>
-            {% if can_edit %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label" for="id_full_name">Full Name</label>
-                {{ form.full_name }}
-                {% if form.full_name.errors %}<div class="field-error">{{ form.full_name.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_phone_number">Phone Number</label>
-                {{ form.phone_number }}
-                {% if form.phone_number.errors %}<div class="field-error">{{ form.phone_number.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_date_of_birth">Date of Birth</label>
-                {{ form.date_of_birth }}
-                {% if form.date_of_birth.errors %}<div class="field-error">{{ form.date_of_birth.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_blood_group">Blood Group</label>
-                {{ form.blood_group }}
-                {% if form.blood_group.errors %}<div class="field-error">{{ form.blood_group.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-12">
-                <label class="form-label" for="id_address">Address</label>
-                {{ form.address }}
-                {% if form.address.errors %}<div class="field-error">{{ form.address.errors.0 }}</div>{% endif %}
-              </div>
-            </div>
-            {% else %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Full Name</label>
-                <div class="sp-readonly-value">{{ student.full_name|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Phone Number</label>
-                <div class="sp-readonly-value">{{ profile.phone_number|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Date of Birth</label>
-                <div class="sp-readonly-value">{{ profile.date_of_birth|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Blood Group</label>
-                <div class="sp-readonly-value">{{ profile.blood_group|default:'—' }}</div>
-              </div>
-              <div class="col-md-12">
-                <label class="form-label">Address</label>
-                <div class="sp-readonly-value">{{ profile.address|default:'—' }}</div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- ── Academic Tab ── -->
-          <div class="sp-tab-pane" id="tab-academic">
-            <p class="sp-section-title">Academic Information</p>
-            {% if can_edit %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label" for="id_roll_number">Roll Number</label>
-                {{ form.roll_number }}
-                {% if form.roll_number.errors %}<div class="field-error">{{ form.roll_number.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_course">Course / Program</label>
-                {{ form.course }}
-                {% if form.course.errors %}<div class="field-error">{{ form.course.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_year">Year</label>
-                {{ form.year }}
-                {% if form.year.errors %}<div class="field-error">{{ form.year.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_semester">Semester</label>
-                {{ form.semester }}
-                {% if form.semester.errors %}<div class="field-error">{{ form.semester.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_section">Section</label>
-                {{ form.section }}
-                {% if form.section.errors %}<div class="field-error">{{ form.section.errors.0 }}</div>{% endif %}
-              </div>
-            </div>
-            {% else %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Roll Number</label>
-                <div class="sp-readonly-value">{{ profile.roll_number|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Course / Program</label>
-                <div class="sp-readonly-value">{{ profile.course|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Year</label>
-                <div class="sp-readonly-value">{{ profile.year|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Semester</label>
-                <div class="sp-readonly-value">{{ profile.semester|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Section</label>
-                <div class="sp-readonly-value">{{ profile.section|default:'—' }}</div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- ── Guardian Tab ── -->
-          <div class="sp-tab-pane" id="tab-guardian">
-            <p class="sp-section-title">Guardian & Emergency Contact</p>
-            {% if can_edit %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label" for="id_guardian_name">Guardian Name</label>
-                {{ form.guardian_name }}
-                {% if form.guardian_name.errors %}<div class="field-error">{{ form.guardian_name.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_guardian_phone">Guardian Phone</label>
-                {{ form.guardian_phone }}
-                {% if form.guardian_phone.errors %}<div class="field-error">{{ form.guardian_phone.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_emergency_contact">Emergency Contact</label>
-                {{ form.emergency_contact }}
-                {% if form.emergency_contact.errors %}<div class="field-error">{{ form.emergency_contact.errors.0 }}</div>{% endif %}
-              </div>
-            </div>
-            {% else %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Guardian Name</label>
-                <div class="sp-readonly-value">{{ profile.guardian_name|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Guardian Phone</label>
-                <div class="sp-readonly-value">{{ profile.guardian_phone|default:'—' }}</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Emergency Contact</label>
-                <div class="sp-readonly-value">{{ profile.emergency_contact|default:'—' }}</div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- ── Photo Tab (own profile only) ── -->
-          {% if can_edit and is_own_profile %}
-          <div class="sp-tab-pane" id="tab-photo">
-            <p class="sp-section-title">Profile Photo</p>
-            <div class="sp-photo-upload" id="photoDropzone">
-              {% if profile.profile_photo %}
-                <img src="{{ profile.profile_photo.url }}" alt="Current photo" class="sp-photo-preview" id="photoPreview">
-              {% else %}
-                <div class="sp-photo-placeholder" id="photoPlaceholder">
-                  <i class="bi bi-person-fill"></i>
+                    {% if profile.semester %}
+                    <div class="mt-3 d-flex flex-wrap justify-content-center gap-2">
+                        <span class="badge bg-primary-subtle text-primary px-2 py-1 rounded fw-semibold">
+                            <i class="bi bi-layers me-1"></i>Sem {{ profile.semester }}
+                        </span>
+                        {% if profile.section %}
+                        <span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded fw-semibold">
+                            Sec {{ profile.section }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
-              {% endif %}
-              <p class="sp-photo-hint mb-2">Upload a clear, front-facing photo</p>
-              {{ form.profile_photo }}
-              {% if form.profile_photo.errors %}<div class="field-error mt-1">{{ form.profile_photo.errors.0 }}</div>{% endif %}
             </div>
-          </div>
-          {% endif %}
+            <div class="col-md-8">
+                {% if can_edit %}
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        <div class="alert alert-info border-0 rounded-3 mb-3 small">
+                            <i class="bi bi-info-circle me-2"></i>Upload your profile photo and update your personal and academic details.
+                            After saving, subjects for your department &amp; semester are <strong>automatically assigned</strong>.
+                        </div>
 
-          <!-- ── Save Button ── -->
-          {% if can_edit %}
-          <div class="mt-4 pt-2 border-top" style="border-color: var(--border-soft) !important;">
-            <button type="submit" class="btn btn-primary-custom text-white px-5 sp-save-btn" id="saveBtn">
-              <i class="bi bi-save me-2"></i> Save Changes
-            </button>
-            {% if form.errors %}
-            <div class="alert alert-danger rounded-3 mt-3" style="font-size:0.85rem;">
-              <i class="bi bi-exclamation-circle me-2"></i>
-              Please fix the errors above before saving.
+                        <div class="profile-upload-box mb-4">
+                            <div class="mb-2">
+                                {% if profile.profile_photo %}
+                                    <img id="profilePreview" src="{{ profile.profile_photo.url }}" alt="Current profile photo" class="profile-preview">
+                                {% else %}
+                                    <div id="profilePreviewPlaceholder" class="profile-preview d-flex align-items-center justify-content-center bg-secondary text-white mx-auto" style="font-size: 2rem;">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <label class="form-label fw-bold small" for="id_profile_photo">Upload profile photo</label>
+                            <div class="text-muted small">Select an image file to update your photo.</div>
+                            <div class="mt-2">{{ form.profile_photo }}</div>
+                        </div>
+
+                        <h6 class="section-title">Personal Information</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_full_name">Full Name</label>
+                                {{ form.full_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_phone_number">Phone Number</label>
+                                {{ form.phone_number }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_roll_number">Roll Number</label>
+                                {{ form.roll_number }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_date_of_birth">Date of Birth</label>
+                                {{ form.date_of_birth }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_blood_group">Blood Group</label>
+                                {{ form.blood_group }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_guardian_name">Guardian Name</label>
+                                {{ form.guardian_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_guardian_phone">Guardian Phone</label>
+                                {{ form.guardian_phone }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_emergency_contact">Emergency Contact</label>
+                                {{ form.emergency_contact }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" for="id_address">Address</label>
+                                {{ form.address }}
+                            </div>
+                        </div>
+
+                        <h6 class="section-title">Academic Information</h6>
+                        <div class="alert alert-success border-0 rounded-3 mb-3 small py-2">
+                            <i class="bi bi-magic me-1"></i>
+                            <strong>Auto-allotment:</strong> Subjects for your department &amp; semester are automatically assigned once you save. No manual selection needed.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_department">Department</label>
+                                {{ form.department }}
+                                {% if form.department.errors %}<div class="field-error">{{ form.department.errors|striptags }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="id_course">Course</label>
+                                {{ form.course }}
+                                {% if form.course.errors %}<div class="field-error">{{ form.course.errors|striptags }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold" for="id_year">Year</label>
+                                {{ form.year }}
+                                {% if form.year.errors %}<div class="field-error">{{ form.year.errors|striptags }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold" for="id_semester">Semester</label>
+                                {{ form.semester }}
+                                {% if form.semester.errors %}<div class="field-error">{{ form.semester.errors|striptags }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold" for="id_section">Section</label>
+                                {{ form.section }}
+                                {% if form.section.errors %}<div class="field-error">{{ form.section.errors|striptags }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 mt-4">
+                            <i class="bi bi-save me-1"></i> Save Profile &amp; Auto-Assign Subjects
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info border-0 rounded-3 mb-3 small">
+                        <i class="bi bi-info-circle me-2"></i>This academic profile is managed by faculty or admin.
+                    </div>
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-semibold">{{ field.label }}</label>
+                            <div class="form-control" style="background-color: var(--bg-body);">
+                                {{ field.value|default:'-' }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         MY SUBJECTS — Auto-allotted section
+    ════════════════════════════════════════ -->
+    <div class="subjects-card">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success-subtle text-success p-2 rounded-circle" style="font-size:1rem;">
+                    <i class="bi bi-book-fill"></i>
+                </span>
+                <div>
+                    <h6 class="mb-0 fw-bold">
+                        {% if is_own_profile %}My Subjects{% else %}Assigned Subjects{% endif %}
+                    </h6>
+                    <span class="text-muted small">
+                        Auto-allotted based on department &amp; semester
+                    </span>
+                </div>
+            </div>
+            {% if subjects %}
+            <span class="allot-badge">
+                <i class="bi bi-check-circle-fill"></i>
+                {{ subjects|length }} Subject{{ subjects|length|pluralize }} Allotted
+            </span>
             {% endif %}
-          </div>
-          {% endif %}
+        </div>
 
-        {% if can_edit %}
-        </form>
+        {% if subjects %}
+        <div class="d-flex flex-wrap gap-2">
+            {% for subject in subjects %}
+            <span class="subject-chip">
+                <span class="chip-dot"></span>
+                <span>{{ subject.name }}</span>
+            </span>
+            {% endfor %}
+        </div>
+
+        {% if is_own_profile %}
+        <div class="mt-3 pt-3 border-top d-flex flex-wrap gap-2 align-items-center" style="border-color: rgba(99,102,241,0.15) !important;">
+            <span class="text-muted small">
+                <i class="bi bi-info-circle me-1"></i>
+                These subjects are for
+                <strong>{{ student.department }}</strong>,
+                <strong>Semester {{ profile.semester }}</strong>.
+                Update your semester to change.
+            </span>
+            <a href="{% url 'academics:timetable' %}" class="btn btn-sm btn-outline-primary ms-auto">
+                <i class="bi bi-calendar3 me-1"></i> View Timetable
+            </a>
+        </div>
         {% endif %}
-      </div><!-- /.sp-tab-content -->
-    </div><!-- /.sp-panel -->
-  </div><!-- /.sp-layout -->
-</div><!-- /.sp-page -->
+
+        {% else %}
+        <div class="subjects-empty">
+            <div class="d-flex align-items-start gap-3">
+                <span class="text-warning fs-4"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                <div>
+                    <div class="fw-semibold mb-1">No subjects allotted yet</div>
+                    <p class="text-muted small mb-2">
+                        {% if not student.department or not profile.semester %}
+                            Your <strong>department</strong>{% if not student.department %} (not set on your account){% endif %}
+                            {% if not profile.semester %} and <strong>semester</strong>{% endif %} must be filled before subjects can be auto-assigned.
+                            {% if is_own_profile %}
+                                Select your department and semester above and save — subjects will appear immediately.
+                            {% else %}
+                                Ask the admin to set the correct department on this student's account.
+                            {% endif %}
+                        {% else %}
+                            No subjects have been added to the system yet for
+                            <strong>{{ student.department }}</strong>, Semester {{ profile.semester }}.
+                            Ask an admin to add subjects from the
+                            <a href="{% url 'academics:subject_management' %}">Subjects page</a>.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
 <script>
-// ── Tab navigation ──
-document.querySelectorAll('.sp-tab').forEach(function(tab) {
-  tab.addEventListener('click', function() {
-    const target = this.dataset.tab;
-    document.querySelectorAll('.sp-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.sp-tab-pane').forEach(p => p.classList.remove('active'));
-    this.classList.add('active');
-    document.getElementById('tab-' + target).classList.add('active');
-  });
-});
+document.addEventListener('DOMContentLoaded', function () {
+    const photoInput = document.getElementById('id_profile_photo');
+    const preview = document.getElementById('profilePreview');
+    const placeholder = document.getElementById('profilePreviewPlaceholder');
 
-// ── Photo preview ──
-(function() {
-  const input = document.getElementById('id_profile_photo');
-  if (!input) return;
-  input.addEventListener('change', function(e) {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      const src = ev.target.result;
-      // Update tab preview
-      let preview = document.getElementById('photoPreview');
-      const placeholder = document.getElementById('photoPlaceholder');
-      if (preview) {
-        preview.src = src;
-      } else if (placeholder) {
-        const img = document.createElement('img');
-        img.src = src; img.alt = 'Preview'; img.className = 'sp-photo-preview'; img.id = 'photoPreview';
-        placeholder.replaceWith(img);
-      }
-      // Update sidebar avatar
-      const sidebarWrap = document.getElementById('sidebarAvatarWrap');
-      const sidebarImg = document.getElementById('sidebarAvatarImg');
-      const sidebarIcon = document.getElementById('sidebarAvatarIcon');
-      if (sidebarImg) {
-        sidebarImg.src = src;
-      } else {
-        const img = document.createElement('img');
-        img.src = src; img.alt = 'Avatar'; img.id = 'sidebarAvatarImg';
-        if (sidebarIcon) sidebarIcon.replaceWith(img);
-        else sidebarWrap.querySelector('.sp-avatar').appendChild(img);
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-})();
+    if (photoInput) {
+        photoInput.addEventListener('change', function (event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
 
-// ── Jump to error tab on form errors ──
-(function() {
-  const personalFields = ['id_phone_number','id_date_of_birth','id_blood_group','id_address'];
-  const academicFields = ['id_roll_number','id_course','id_year','id_semester','id_section'];
-  const guardianFields = ['id_guardian_name','id_guardian_phone','id_emergency_contact'];
-  function hasError(ids) { return ids.some(id => { const el = document.getElementById(id); return el && el.classList.contains('is-invalid'); }); }
-  // Check for field-error elements near each tab
-  const pane = document.querySelector('.field-error');
-  if (pane) {
-    const parent = pane.closest('.sp-tab-pane');
-    if (parent) {
-      const tabId = parent.id.replace('tab-', '');
-      const tab = document.querySelector(`[data-tab="${tabId}"]`);
-      if (tab) tab.click();
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                if (preview) {
+                    preview.src = e.target.result;
+                } else if (placeholder) {
+                    placeholder.outerHTML = `<img id="profilePreview" src="${e.target.result}" alt="Preview" class="profile-preview">`;
+                }
+            };
+            reader.readAsDataURL(file);
+        });
     }
-  }
-})();
+});
 </script>
 {% endblock %}

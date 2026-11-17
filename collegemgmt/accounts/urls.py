@@ -1,10 +1,9 @@
 from django.urls import path, include, reverse_lazy
 from rest_framework.routers import DefaultRouter
 from django.contrib.auth import views as auth_views
-from .views import check_college_id
 from .views import (
-    UserViewSet,
     register_page,
+    check_college_id,
     login_page,
     dashboard_page,
     logout_page,
@@ -12,19 +11,14 @@ from .views import (
 )
 from .forms import StyledPasswordResetForm, StyledSetPasswordForm
 
-router = DefaultRouter()
-router.register(r'users', UserViewSet, basename='user')
-
 urlpatterns = [
-    # API
-    path('api/', include(router.urls)),
-
     # Authentication
     path('register/', register_page, name='register_page'),
+    # Registration form's live college ID validation endpoint.
+    path('check-college-id/', check_college_id, name='check_college_id'),
     path('login/', login_page, name='login_page'),
     path('dashboard/', dashboard_page, name='dashboard_page'),
     path('logout/', logout_page, name='logout_page'),
-    path('check-college-id/', check_college_id, name='check_college_id'),
 
     # Forgot Password
     path(

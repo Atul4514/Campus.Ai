@@ -4,7 +4,7 @@
 <div class="auth-card mx-auto">
     <div class="auth-card-header">
         <i class="bi bi-shield-lock-fill"></i>
-        <h3 class="mb-1">Welcome </h3>
+        <h3 class="mb-1">Welcome</h3>
         <p class="mb-0 opacity-75">Login to your account</p>
     </div>
     <div class="auth-card-body">
@@ -26,17 +26,18 @@
             {% if form.non_field_errors %}
                 <div class="field-error mb-2">{{ form.non_field_errors|striptags }}</div>
             {% endif %}
-            <button type="submit" class="btn btn-primary-custom w-100 text-white mt-2">
+            <div class="d-flex justify-content-end mb-3">
+                <a href="{% url 'password_reset' %}" class="small text-decoration-none" style="color:var(--primary);">Forgot Password?</a>
+            </div>
+            <button type="submit" class="btn btn-primary-custom w-100 text-white">
                 <i class="bi bi-box-arrow-in-right me-1"></i> Login
             </button>
         </form>
+
         <p class="text-center mt-4 mb-0 auth-link">
             Don't have an account? <a href="{% url 'register_page' %}">Register here</a>
         </p>
     </div>
-    <div class="text-end mb-3">
-    <a href="{% url 'password_reset' %}" class="small text-decoration-none" style="color:#4f46e5;">Forgot Password?</a>
-</div>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {

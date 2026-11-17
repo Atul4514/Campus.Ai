@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Study Materials & Notes | CampusAI{% endblock %}
+{% block wrapper_class %}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .file-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .material-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid var(--border-color);
+        background: var(--surface);
+        border-radius: 16px;
+    }
+    .material-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+    }
+    .upload-cta-card {
+        border: 2px dashed var(--border-color);
+        border-radius: 16px;
+        background: rgba(79, 70, 229, 0.03);
+        transition: all 0.2s ease;
+    }
+    .upload-cta-card:hover {
+        border-color: var(--primary);
+        background: rgba(79, 70, 229, 0.07);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dash-wrapper">
+    <!-- Header banner -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded">Academic Vault</span>
+                <span class="text-muted small">Course Resources & Syllabus</span>
+            </div>
+            <h3 class="mb-0 fw-bold">Study Materials & Notes</h3>
+            <p class="text-muted mb-0 small">Access lecture presentations, reference books, lab manuals and notes.</p>
+        </div>
+        {% if request.user.role != 'student' %}
+        <a class="btn btn-primary-custom d-flex align-items-center gap-2" href="{% url 'academics:material_upload' %}">
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+            <span>Upload Notes / Material</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="glass-card p-3 mb-4">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Search by title, subject or description..." value="{{ q }}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="subject" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Subjects</option>
+                    {% for subj in subjects %}
+                    <option value="{{ subj }}" {% if selected_subject == subj %}selected{% endif %}>{{ subj }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary-custom btn-sm w-100">Filter</button>
+                {% if q or selected_subject %}
+                <a href="{% url 'academics:materials' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if request.user.role != 'student' and not items %}
+    <!-- Quick Upload CTA when empty -->
+    <div class="upload-cta-card p-5 text-center mb-4 cursor-pointer" onclick="window.location.href='{% url 'academics:material_upload' %}'">
+        <div class="stat-icon bg-primary mx-auto mb-3 text-white">
+            <i class="bi bi-file-earmark-arrow-up-fill fs-4"></i>
+        </div>
+        <h5 class="fw-bold">Upload Your First Lecture Notes</h5>
+        <p class="text-muted small mb-3">Share PDF documents, presentation slides, or lab manuals with your students.</p>
+        <span class="btn btn-sm btn-primary-custom">
+            <i class="bi bi-upload me-1"></i> Choose File to Upload
+        </span>
+    </div>
+    {% endif %}
+
+    <!-- Materials Grid -->
+    <div class="row g-4">
+        {% for item in items %}
+        <div class="col-lg-4 col-md-6">
+            <article class="material-card p-4 h-100 d-flex flex-column justify-content-between shadow-sm">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                        <div class="file-icon-box bg-primary-subtle text-primary">
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary-subtle text-secondary small fw-semibold">
+                                Sem {{ item.semester }}{% if item.section %} ({{ item.section }}){% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mb-1 text-main">{{ item.title }}</h5>
+                    <div class="badge bg-primary text-white mb-2 small fw-normal">{{ item.subject }}</div>
+                    <div class="text-muted small mb-3">
+                        {{ item.department }} · Uploaded {{ item.created_at|date:"d M Y" }}
+                    </div>
+
+                    {% if item.description %}
+                    <p class="small text-muted mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        {{ item.description }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="pt-3 border-top mt-auto d-flex justify-content-between align-items-center">
+                    <a class="btn btn-sm btn-outline-primary d-flex align-items-center gap-2" href="{{ item.file.url }}" target="_blank" download>
+                        <i class="bi bi-download"></i>
+                        <span>Download</span>
+                    </a>
+
+                    {% if request.user.role == 'admin' or item.uploaded_by == request.user %}
+                    <form method="post" action="{% url 'academics:material_delete' item.pk %}" class="d-inline" onsubmit="return confirm('Delete this study material?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Note">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="glass-card p-5 text-center text-muted">
+                <i class="bi bi-folder-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                <h5 class="fw-bold">No Study Materials Found</h5>
+                <p class="small mb-3">No lecture notes or resources match your active criteria.</p>
+                {% if request.user.role != 'student' %}
+                <a href="{% url 'academics:material_upload' %}" class="btn btn-sm btn-primary-custom">
+                    Upload Study Notes
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}

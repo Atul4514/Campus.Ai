@@ -1,295 +1,243 @@
 {% extends 'base.html' %}
-{% block title %}Admin Dashboard — CampusAI{% endblock %}
+{% block title %}Admin Dashboard | CampusAI{% endblock %}
 {% block wrapper_class %}{% endblock %}
-{% block content %}
+
+{% block extra_styles %}
 <style>
-  /* ── Page ── */
-  .dash-page { max-width: 1300px; margin: 0 auto; padding: 2rem 1.25rem; }
-
-  /* ── Welcome Banner ── */
-  .welcome-banner {
-    background: rgba(255,255,255,0.10);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 24px;
-    padding: 2rem 2.5rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    animation: fadeInDown 0.5s ease both;
-  }
-  .welcome-text h2 {
-    font-size: 1.9rem; font-weight: 800; color: #fff; margin: 0;
-    text-shadow: 0 2px 12px rgba(0,0,0,0.2);
-  }
-  .welcome-text p { color: rgba(255,255,255,0.7); margin: 0.3rem 0 0; font-size: 0.9rem; }
-
-  /* ── Action Button Cards ── */
-  .action-grid {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-  .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.7rem 1.3rem;
-    border-radius: 14px;
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    letter-spacing: 0.2px;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
-                box-shadow 0.22s ease,
-                filter 0.22s ease;
-    will-change: transform;
-  }
-  .action-btn::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: rgba(255,255,255,0.15);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  .action-btn:hover::before { opacity: 1; }
-  .action-btn:hover {
-    transform: translateY(-4px) scale(1.04);
-    filter: brightness(1.08);
-  }
-  .action-btn:active { transform: translateY(-1px) scale(0.98); }
-
-  .action-btn .btn-icon {
-    width: 32px; height: 32px;
-    border-radius: 9px;
-    background: rgba(255,255,255,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .action-btn:hover .btn-icon { transform: rotate(-8deg) scale(1.15); }
-
-  .action-btn.ab-purple  { background: linear-gradient(135deg,#7c3aed,#6366f1); color:#fff; box-shadow: 0 4px 16px rgba(124,58,237,0.3); }
-  .action-btn.ab-indigo  { background: linear-gradient(135deg,#6366f1,#4338ca); color:#fff; box-shadow: 0 4px 16px rgba(99,102,241,0.35); }
-  .action-btn.ab-cyan    { background: linear-gradient(135deg,#06b6d4,#0891b2); color:#fff; box-shadow: 0 4px 16px rgba(6,182,212,0.3); }
-  .action-btn.ab-slate   { background: rgba(255,255,255,0.12); color:#fff; border: 1px solid rgba(255,255,255,0.2); box-shadow: none; }
-  .action-btn.ab-rose    { background: linear-gradient(135deg,#f43f5e,#e11d48); color:#fff; box-shadow: 0 4px 16px rgba(244,63,94,0.3); }
-
-  .action-btn:hover.ab-purple  { box-shadow: 0 10px 28px rgba(124,58,237,0.5); }
-  .action-btn:hover.ab-indigo  { box-shadow: 0 10px 28px rgba(99,102,241,0.5); }
-  .action-btn:hover.ab-cyan    { box-shadow: 0 10px 28px rgba(6,182,212,0.45); }
-  .action-btn:hover.ab-slate   { box-shadow: 0 8px 20px rgba(0,0,0,0.25); background: rgba(255,255,255,0.2); }
-  .action-btn:hover.ab-rose    { box-shadow: 0 10px 28px rgba(244,63,94,0.5); }
-
-  /* ── Stat Cards ── */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-  .s-card {
-    background: var(--surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
-    animation: fadeInUp 0.5s ease both;
-    cursor: default;
-  }
-  .s-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 16px 36px rgba(0,0,0,0.22); }
-  .s-icon {
-    width: 56px; height: 56px; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem; color: #fff; flex-shrink: 0;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .s-card:hover .s-icon { transform: scale(1.18) rotate(-6deg); }
-  .s-value { font-size: 2rem; font-weight: 800; color: var(--text-main); line-height: 1; }
-  .s-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.4px; }
-
-  /* ── Quick Access Cards ── */
-  .quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
-  .quick-card {
-    background: var(--surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    padding: 1.75rem;
-    text-decoration: none;
-    display: block;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
-    animation: fadeInUp 0.5s ease both;
-  }
-  .quick-card::after {
-    content: '';
-    position: absolute;
-    bottom: -60px; right: -60px;
-    width: 120px; height: 120px;
-    border-radius: 50%;
-    opacity: 0.06;
-    transition: transform 0.4s ease, opacity 0.4s ease;
-  }
-  .quick-card:hover { transform: translateY(-7px) scale(1.02); box-shadow: 0 20px 48px rgba(0,0,0,0.25); }
-  .quick-card:hover::after { transform: scale(1.6); opacity: 0.12; }
-  .quick-card-icon {
-    width: 52px; height: 52px;
-    border-radius: 15px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; color: #fff; margin-bottom: 1rem;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .quick-card:hover .quick-card-icon { transform: scale(1.2) rotate(-8deg); }
-  .quick-card-title { font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.35rem; }
-  .quick-card-desc { font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
-  .quick-card-arrow {
-    position: absolute; top: 1.75rem; right: 1.75rem;
-    font-size: 1.1rem; color: var(--text-muted);
-    transition: transform 0.25s ease, color 0.25s ease;
-  }
-  .quick-card:hover .quick-card-arrow { transform: translate(3px, -3px); color: var(--primary); }
-
-  /* ── Glass Panel ── */
-  .dash-glass {
-    background: var(--surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    padding: 1.75rem;
-    animation: fadeInUp 0.5s ease 0.2s both;
-  }
-  .dash-glass h5 { font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.75rem; }
-
-  /* ── Animations ── */
-  @keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+    .admin-tile {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.4rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 220px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        position: relative;
+    }
+    .admin-tile:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary);
+    }
+    .tile-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        color: #ffffff;
+        box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.15);
+    }
 </style>
+{% endblock %}
 
-<div class="dash-page">
+{% block content %}
+<div class="dash-wrapper">
+    <!-- Top Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="mb-0 fw-bold">Admin Dashboard</h3>
+            <span class="badge-role mt-1 d-inline-block">ADMINISTRATOR</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/admin/" class="btn btn-outline-secondary btn-sm rounded-3">
+                <i class="bi bi-database me-1"></i> Django DB Admin
+            </a>
+            <a href="{% url 'logout_page' %}" class="btn btn-outline-danger btn-sm rounded-3">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
+        </div>
+    </div>
 
-  <!-- ── Welcome Banner ── -->
-  <div class="welcome-banner">
-    <div class="welcome-text">
-      <h2>Welcome back, {{ user.full_name|default:user.username }} 👋</h2>
-      <p>Here's an overview of CampusAI activity today.</p>
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="small text-muted">Students</div>
+                <h3 class="mb-0 fw-bold">{{ total_students }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="small text-muted">Faculty</div>
+                <h3 class="mb-0 fw-bold">{{ total_faculty }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="small text-muted">Timetable Slots</div>
+                <h3 class="mb-0 fw-bold">{{ total_classes_scheduled }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="small text-muted">Attendance Sessions</div>
+                <h3 class="mb-0 fw-bold">{{ total_attendance_sessions }}</h3>
+            </div>
+        </div>
     </div>
-    <div class="action-grid">
-      <a href="{% url 'role_access:manage_roles' %}" class="action-btn ab-purple" id="btn-role-access">
-        <span class="btn-icon"><i class="bi bi-shield-lock"></i></span>
-        Role &amp; Access
-      </a>
-      <a href="{% url 'student_management:manage_students' %}" class="action-btn ab-indigo" id="btn-student-mgmt">
-        <span class="btn-icon"><i class="bi bi-mortarboard"></i></span>
-        Student Mgmt
-      </a>
-      <a href="/admin/" class="action-btn ab-cyan" id="btn-django-admin">
-        <span class="btn-icon"><i class="bi bi-gear"></i></span>
-        Django Admin
-      </a>
-      <a href="{% url 'logout_page' %}" class="action-btn ab-rose" id="btn-logout">
-        <span class="btn-icon"><i class="bi bi-box-arrow-right"></i></span>
-        Logout
-      </a>
-    </div>
-  </div>
 
-  <!-- ── Stat Cards ── -->
-  <div class="stat-grid">
-    <div class="s-card" style="animation-delay:0ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#6366f1,#4338ca);">
-        <i class="bi bi-mortarboard"></i>
-      </div>
-      <div>
-        <div class="s-value">{{ total_students }}</div>
-        <div class="s-label">Total Students</div>
-      </div>
-    </div>
-    <div class="s-card" style="animation-delay:80ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">
-        <i class="bi bi-person-badge"></i>
-      </div>
-      <div>
-        <div class="s-value">{{ total_faculty }}</div>
-        <div class="s-label">Total Faculty</div>
-      </div>
-    </div>
-    <div class="s-card" style="animation-delay:160ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
-        <i class="bi bi-hourglass-split"></i>
-      </div>
-      <div>
-        <div class="s-value">{{ pending_allowlist }}</div>
-        <div class="s-label">Pending Allowlist</div>
-      </div>
-    </div>
-    <div class="s-card" style="animation-delay:240ms;">
-      <div class="s-icon" style="background:linear-gradient(135deg,#ec4899,#db2777);">
-        <i class="bi bi-person-plus"></i>
-      </div>
-      <div>
-        <div class="s-value">{{ new_this_week }}</div>
-        <div class="s-label">New This Week</div>
-      </div>
-    </div>
-  </div>
+    <!-- Management Hub Tiles (Middle of the page) -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Student Management -->
+        <div class="col-lg-4 col-md-6">
+            <div class="admin-tile">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="tile-icon" style="background: linear-gradient(135deg, #4f46e5, #6366f1);">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary fw-semibold">{{ total_students }} enrolled</span>
+                    </div>
+                    <h5 class="fw-bold mb-1">Student Management</h5>
+                    <p class="text-muted small mb-0">Directory, academic profiles & enrollment.</p>
+                </div>
+                <div class="pt-3 border-top mt-3">
+                    <a href="{% url 'student_management:manage_students' %}" class="btn btn-primary-custom btn-sm w-100">
+                        <i class="bi bi-people-fill me-1"></i> Manage Students
+                    </a>
+                </div>
+            </div>
+        </div>
 
-  <!-- ── Quick Access Cards ── -->
-  <div class="quick-grid">
-    <a href="{% url 'student_management:manage_students' %}" class="quick-card" style="animation-delay:0ms;" id="qc-students">
-      <div class="quick-card-icon" style="background:linear-gradient(135deg,#6366f1,#4338ca);">
-        <i class="bi bi-mortarboard-fill"></i>
-      </div>
-      <div class="quick-card-title">Student Management</div>
-      <div class="quick-card-desc">View, filter, edit and delete student accounts and profiles.</div>
-      <i class="bi bi-arrow-up-right quick-card-arrow"></i>
-      <div style="position:absolute;bottom:-60px;right:-60px;width:120px;height:120px;border-radius:50%;background:#6366f1;opacity:0.07;"></div>
-    </a>
-    <a href="{% url 'role_access:manage_roles' %}" class="quick-card" style="animation-delay:80ms;" id="qc-roles">
-      <div class="quick-card-icon" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
-        <i class="bi bi-shield-check"></i>
-      </div>
-      <div class="quick-card-title">Role &amp; Access Control</div>
-      <div class="quick-card-desc">Manage who can register — allowlist emails by role before sign-up.</div>
-      <i class="bi bi-arrow-up-right quick-card-arrow"></i>
-      <div style="position:absolute;bottom:-60px;right:-60px;width:120px;height:120px;border-radius:50%;background:#7c3aed;opacity:0.07;"></div>
-    </a>
-    <a href="/admin/" class="quick-card" style="animation-delay:160ms;" id="qc-django">
-      <div class="quick-card-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">
-        <i class="bi bi-gear-wide-connected"></i>
-      </div>
-      <div class="quick-card-title">Django Admin Panel</div>
-      <div class="quick-card-desc">Low-level database access — manage all models, users, and permissions.</div>
-      <i class="bi bi-arrow-up-right quick-card-arrow"></i>
-      <div style="position:absolute;bottom:-60px;right:-60px;width:120px;height:120px;border-radius:50%;background:#06b6d4;opacity:0.07;"></div>
-    </a>
-  </div>
+        <!-- 2. Faculty Management -->
+        <div class="col-lg-4 col-md-6">
+            <div class="admin-tile">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="tile-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <i class="bi bi-person-workspace"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success fw-semibold">{{ total_faculty }} faculty</span>
+                    </div>
+                    <h5 class="fw-bold mb-1">Faculty Management</h5>
+                    <p class="text-muted small mb-0">Designations, profiles & assigned subjects.</p>
+                </div>
+                <div class="pt-3 border-top mt-3">
+                    <a href="{% url 'faculty:manage_faculty_page' %}" class="btn btn-primary-custom btn-sm w-100">
+                        <i class="bi bi-person-badge-fill me-1"></i> Manage Faculty
+                    </a>
+                </div>
+            </div>
+        </div>
 
-  <!-- ── Analytics Placeholder ── -->
-  <div class="dash-glass">
-    <h5><i class="bi bi-bar-chart-fill me-2" style="color:var(--primary);"></i>Analytics &amp; Reports</h5>
-    <p class="text-muted mb-0" style="font-size:0.875rem;">
-      Analytics module coming soon — attendance trends, department-wise breakdowns, and AI-powered insights.
-    </p>
-  </div>
+        <!-- 3. Timetable Assignment -->
+        <div class="col-lg-4 col-md-6">
+            <div class="admin-tile">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="tile-icon" style="background: linear-gradient(135deg, #06b6d4, #0284c7);">
+                            <i class="bi bi-calendar2-range-fill"></i>
+                        </div>
+                        <span class="badge bg-info-subtle text-info fw-semibold">{{ total_classes_scheduled }} slots</span>
+                    </div>
+                    <h5 class="fw-bold mb-1">Timetable Allocation</h5>
+                    <p class="text-muted small mb-0">Assign class slots to faculty & students.</p>
+                </div>
+                <div class="pt-3 border-top mt-3 d-flex gap-2">
+                    <a href="{% url 'academics:timetable_create' %}" class="btn btn-primary-custom btn-sm flex-fill">
+                        <i class="bi bi-plus-circle me-1"></i> Assign Slot
+                    </a>
+                    <a href="{% url 'academics:timetable' %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-calendar3 me-1"></i> View Routine
+                    </a>
+                </div>
+            </div>
+        </div>
 
+        <!-- 4. Attendance Hub -->
+        <div class="col-lg-4 col-md-6">
+            <div class="admin-tile">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="tile-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning fw-semibold">{{ total_attendance_sessions }} sessions</span>
+                    </div>
+                    <h5 class="fw-bold mb-1">Attendance Control</h5>
+                    <p class="text-muted small mb-0">Roll calls, presence tracking & reports.</p>
+                </div>
+                <div class="pt-3 border-top mt-3 d-flex gap-2">
+                    <a href="{% url 'attendance:session_list' %}" class="btn btn-primary-custom btn-sm flex-fill">
+                        <i class="bi bi-speedometer2 me-1"></i> Sessions Hub
+                    </a>
+                    <a href="{% url 'attendance:attendance_report' %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Role & Access Control -->
+        <div class="col-lg-4 col-md-6">
+            <div class="admin-tile">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="tile-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <span class="badge bg-secondary-subtle text-secondary fw-semibold">{{ pending_allowlist }} pending</span>
+                    </div>
+                    <h5 class="fw-bold mb-1">Roles & Access</h5>
+                    <p class="text-muted small mb-0">User permissions & ID allowlist control.</p>
+                </div>
+                <div class="pt-3 border-top mt-3">
+                    <a href="{% url 'role_access:manage_roles' %}" class="btn btn-primary-custom btn-sm w-100">
+                        <i class="bi bi-key-fill me-1"></i> Manage Roles
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Notices & Resources -->
+        <div class="col-lg-4 col-md-6">
+            <div class="admin-tile">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="tile-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                            <i class="bi bi-megaphone-fill"></i>
+                        </div>
+                        <span class="badge bg-light text-muted border">Vault</span>
+                    </div>
+                    <h5 class="fw-bold mb-1">Bulletins & Notes</h5>
+                    <p class="text-muted small mb-0">Publish circulars & review lecture notes.</p>
+                </div>
+                <div class="pt-3 border-top mt-3 d-flex gap-2">
+                    <a href="{% url 'academics:notices' %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-bell me-1"></i> Notices
+                    </a>
+                    <a href="{% url 'academics:materials' %}" class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-journal-text me-1"></i> Notes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Subject Catalogue -->
+        <div class="col-lg-4 col-md-6">
+            <div class="admin-tile">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="tile-icon" style="background: linear-gradient(135deg, #0ea5e9, #2563eb);">
+                            <i class="bi bi-journal-bookmark-fill"></i>
+                        </div>
+                        <span class="badge bg-info-subtle text-info fw-semibold">{{ total_subjects }} subjects</span>
+                    </div>
+                    <h5 class="fw-bold mb-1">Subject Catalogue</h5>
+                    <p class="text-muted small mb-0">Create subjects with their department and semester.</p>
+                </div>
+                <div class="pt-3 border-top mt-3">
+                    <a href="{% url 'academics:subject_management' %}" class="btn btn-primary-custom btn-sm w-100">
+                        <i class="bi bi-plus-circle me-1"></i> Manage Subjects
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

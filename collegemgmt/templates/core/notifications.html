@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center" data-aos="fade-up" data-aos-duration="400">
+  <div class="col-lg-9 col-xl-8">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="h4 fw-bold mb-1">Your Notifications</h2>
+        <p class="text-muted small mb-0">Updates, academic notices, and activity alerts</p>
+      </div>
+      {% if notifications %}
+      <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="markAllNotificationsRead(this)">
+        <i class="bi bi-check2-all me-1"></i> Mark All as Read
+      </button>
+      {% endif %}
+    </div>
+
+    {% if notifications %}
+    <div class="d-flex flex-column gap-3">
+      {% for notif in notifications %}
+      <div class="glass-card card-hover p-3 p-md-4 position-relative border {% if not notif.is_read %}border-primary border-opacity-50{% endif %}" style="border-radius: var(--r-lg);">
+        <div class="d-flex align-items-start gap-3">
+          <div class="stat-icon {% if notif.notif_type == 'notice' %}icon-indigo{% elif notif.notif_type == 'note_upload' %}icon-teal{% elif notif.notif_type == 'timetable_change' %}icon-amber{% elif notif.notif_type == 'complaint_update' %}icon-pink{% else %}icon-violet{% endif %} flex-shrink-0" style="width: 42px; height: 42px; border-radius: var(--r-md); font-size: 1.15rem;">
+            {% if notif.notif_type == 'notice' %}
+              <i class="bi bi-megaphone-fill"></i>
+            {% elif notif.notif_type == 'note_upload' %}
+              <i class="bi bi-file-earmark-text-fill"></i>
+            {% elif notif.notif_type == 'timetable_change' %}
+              <i class="bi bi-calendar-event-fill"></i>
+            {% elif notif.notif_type == 'complaint_update' %}
+              <i class="bi bi-chat-square-text-fill"></i>
+            {% else %}
+              <i class="bi bi-bell-fill"></i>
+            {% endif %}
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-1">
+              <h6 class="fw-bold mb-0 text-truncate" style="max-width: 80%;">{{ notif.title }}</h6>
+              <span class="text-muted small" style="font-size: 0.75rem;">
+                <i class="bi bi-clock me-1"></i>{{ notif.created_at|timesince }} ago
+              </span>
+            </div>
+            <p class="text-secondary small mb-2" style="white-space: pre-line;">{{ notif.message }}</p>
+            {% if notif.link %}
+            <a href="{{ notif.link }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1" style="font-size: 0.78rem;">
+              View Details <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass-card text-center py-5" style="border-radius: var(--r-xl);">
+      <div class="stat-icon icon-indigo mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 50%; font-size: 1.5rem;">
+        <i class="bi bi-bell-slash"></i>
+      </div>
+      <h5 class="fw-bold mb-1">No Notifications Yet</h5>
+      <p class="text-muted small mb-0">When you receive notices, study materials, or timetable updates, they'll show up here.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function markAllNotificationsRead(btn) {
+  fetch("{% url 'core_api:mark_all_read' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || "",
+      "Content-Type": "application/json"
+    }
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      if (btn) btn.style.display = 'none';
+      const badge = document.querySelector('#notifBell .badge');
+      if (badge) badge.remove();
+      if (window.CampusAI && window.CampusAI.showToast) {
+        window.CampusAI.showToast('All notifications marked as read', 'success');
+      }
+    }
+  }).catch(console.error);
+}
+</script>
+{% endblock %}

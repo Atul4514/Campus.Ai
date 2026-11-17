@@ -27,6 +27,22 @@ class StudentProfile(models.Model):
         ('7', 'Semester 7'), ('8', 'Semester 8'),
     ]
 
+    COURSE_CHOICES = [
+        ('', 'Select Course'),
+        ('B.Tech', 'B.Tech (Bachelor of Technology)'),
+        ('BCA', 'BCA (Bachelor of Computer Applications)'),
+        ('B.Sc', 'B.Sc (Bachelor of Science)'),
+        ('B.Sc CS', 'B.Sc Computer Science'),
+        ('B.Sc IT', 'B.Sc Information Technology'),
+        ('B.Com', 'B.Com (Bachelor of Commerce)'),
+        ('BBA', 'BBA (Bachelor of Business Administration)'),
+        ('BA', 'BA (Bachelor of Arts)'),
+        ('M.Tech', 'M.Tech (Master of Technology)'),
+        ('MCA', 'MCA (Master of Computer Applications)'),
+        ('M.Sc', 'M.Sc (Master of Science)'),
+        ('MBA', 'MBA (Master of Business Administration)'),
+    ]
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -37,7 +53,7 @@ class StudentProfile(models.Model):
     year = models.CharField(max_length=20, choices=YEAR_CHOICES, blank=True, default='')
     semester = models.CharField(max_length=20, choices=SEMESTER_CHOICES, blank=True, default='')
     section = models.CharField(max_length=20, blank=True, default='')
-    course = models.CharField(max_length=100, blank=True, default='', help_text='e.g. B.Tech, MBA, BCA')
+    course = models.CharField(max_length=100, choices=COURSE_CHOICES, blank=True, default='', help_text='Select your enrolled course')
     phone_number = models.CharField(max_length=15, blank=True, default='')
     blood_group = models.CharField(max_length=5, choices=BLOOD_GROUP_CHOICES, blank=True, default='')
     address = models.TextField(blank=True, default='')
