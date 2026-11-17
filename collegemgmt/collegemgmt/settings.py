@@ -65,8 +65,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
-if HAS_WHITENOISE:
-    MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
+MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'collegemgmt.urls'
 AUTH_USER_MODEL = 'accounts.User'
@@ -164,10 +163,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = Path('/tmp/media') if os.environ.get('VERCEL') else BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-if HAS_WHITENOISE:
-    # Vercel can serve Django admin assets directly from the bundled finders.
-    WHITENOISE_USE_FINDERS = True
-    WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = DEBUG
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
