@@ -5,8 +5,6 @@ ENV/
 db.sqlite3
 db.sqlite3-journal
 media/
-staticfiles/
-static/
 __pycache__/
 *.py[cod]
 .env
